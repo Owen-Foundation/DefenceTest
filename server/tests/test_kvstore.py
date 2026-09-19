@@ -2,13 +2,13 @@
 
 import unittest
 
-from fishtest.kvstore import KeyValueStore
+from defencetest.kvstore import KeyValueStore
 
 
 class CreateKeyValueStoreTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.kvstore = KeyValueStore(db_name="fishtest_tests", collection="test_kvstore")
+        cls.kvstore = KeyValueStore(db_name="defencetest_tests", collection="test_kvstore")
 
     def tearDown(self):
         self.kvstore.clear()
@@ -19,7 +19,7 @@ class CreateKeyValueStoreTest(unittest.TestCase):
 
     def test_kvstore_persistence(self):
         kvstore_tmp = KeyValueStore(
-            db_name="fishtest_tests",
+            db_name="defencetest_tests",
             collection="test_kvstore_tmp",
         )
         kvstore_tmp["a"] = 1
@@ -29,7 +29,7 @@ class CreateKeyValueStoreTest(unittest.TestCase):
         with self.assertRaises(Exception):
             kvstore_tmp["a"]
         kvstore_tmp = KeyValueStore(
-            db_name="fishtest_tests",
+            db_name="defencetest_tests",
             collection="test_kvstore_tmp",
         )
         self.assertEqual(kvstore_tmp["a"], 1)

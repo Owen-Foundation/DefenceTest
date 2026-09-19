@@ -8,7 +8,7 @@ from unittest.mock import patch
 import test_support
 from ui_user_test_case import UiUserTestCase
 
-from fishtest.http.settings import (
+from defencetest.http.settings import (
     POLL_PENDING_USERS_NAV_S,
     POLL_RATE_LIMITS_GITHUB_S,
     POLL_RATE_LIMITS_SERVER_S,
@@ -132,7 +132,7 @@ class TestAdminViews(UiUserTestCase):
     def test_server_authoritative_tables_retire_legacy_sorting_js(self):
         js_path = (
             Path(__file__).resolve().parents[1]
-            / "fishtest"
+            / "defencetest"
             / "static"
             / "js"
             / "application.js"
@@ -142,7 +142,7 @@ class TestAdminViews(UiUserTestCase):
         self.assertNotIn("handleSortingTables", js_source)
         self.assertNotIn('row.dataset.noSort === "true"', js_source)
 
-        templates_root = Path(__file__).resolve().parents[1] / "fishtest" / "templates"
+        templates_root = Path(__file__).resolve().parents[1] / "defencetest" / "templates"
         for template_name in (
             "contributors_content_fragment.html.j2",
             "machines_fragment.html.j2",
@@ -266,7 +266,7 @@ class TestAdminViews(UiUserTestCase):
                 if doc is not None:
                     self.rundb.userdb.remove_user(doc, self.username)
 
-    @patch("fishtest.views.gh.rate_limit")
+    @patch("defencetest.views.gh.rate_limit")
     def test_rate_limits_full_page_and_hx_fragment(self, mock_rate_limit):
         mock_rate_limit.return_value = {
             "remaining": 4321,
@@ -298,7 +298,7 @@ class TestAdminViews(UiUserTestCase):
             'id="server_reset" hx-swap-oob="innerHTML"', fragment_response.text
         )
 
-    @patch("fishtest.views.gh.rate_limit")
+    @patch("defencetest.views.gh.rate_limit")
     def test_rate_limits_hx_header_still_returns_full_page(self, mock_rate_limit):
         mock_rate_limit.return_value = {
             "remaining": 123,
@@ -373,7 +373,7 @@ class TestAdminViews(UiUserTestCase):
     ):
         js_path = (
             Path(__file__).resolve().parents[1]
-            / "fishtest"
+            / "defencetest"
             / "static"
             / "js"
             / "application.js"
@@ -402,7 +402,7 @@ class TestAdminViews(UiUserTestCase):
         self.assertIn("function refreshClientRateLimitOnActivation() {", js_source)
         self.assertIn("clearPollTimeout();", js_source)
         self.assertIn(
-            'localStorage.setItem("fishtest_github_rate_limit_low", value);',
+            'localStorage.setItem("defencetest_github_rate_limit_low", value);',
             js_source,
         )
         self.assertIn(

@@ -23,7 +23,7 @@ class TestHttpUiSessionSemantics(unittest.TestCase):
         )
 
     def test_ui_404_commits_session_cookie(self):
-        from fishtest.http.cookie_session import SESSION_COOKIE_NAME
+        from defencetest.http.cookie_session import SESSION_COOKIE_NAME
 
         client = test_support.make_test_client(
             rundb=self.rundb,
@@ -43,8 +43,8 @@ class TestHttpUiSessionSemantics(unittest.TestCase):
         from fastapi import Request
         from fastapi.responses import HTMLResponse
 
-        from fishtest.http.cookie_session import SESSION_COOKIE_NAME, load_session
-        from fishtest.http.csrf import csrf_or_403, csrf_token_from_form
+        from defencetest.http.cookie_session import SESSION_COOKIE_NAME, load_session
+        from defencetest.http.csrf import csrf_or_403, csrf_token_from_form
 
         _FastAPI, TestClient = test_support.require_fastapi()
 

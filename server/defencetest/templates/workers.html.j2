@@ -1,0 +1,88 @@
+{% extends "base.html.j2" %}
+{% block title %}Workers Management | DefenceTest{% endblock %}
+
+{% block body %}
+<h2>Workers Management</h2>
+
+{% if show_admin %}
+  <h3>{{ worker_name }}</h3>
+  <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="mb-3">Last changed: {{ last_updated_label }}</div>
+    <div class="mb-3">
+      <label for="messageInput" class="form-label">Issue</label>
+      <textarea
+        id="messageInput"
+        rows="4"
+        class="form-control"
+        placeholder="Describe the issue here"
+        name="message"
+      >{{ message }}</textarea>
+    </div>
+    <div class="mb-3 form-check">
+      <label class="form-check-label" for="blockWorker">Blocked</label>
+      <input
+        type="checkbox"
+        class="form-check-input"
+        id="blockWorker"
+        name="blocked"
+        {{ "checked" if blocked else "" }}
+      >
+    </div>
+    <button
+      type="submit"
+      name="submit"
+      value="Submit"
+      class="btn btn-primary"
+    >Submit</button>
+    <button type="submit" name="submit" class="btn btn-secondary">
+      Cancel
+    </button>
+  </form>
+  <hr>
+{% endif %}
+
+<h3>Blocked workers</h3>
+
+<form
+  id="workers-filters"
+  class="row g-3 mb-3 align-items-end"
+  method="get"
+  action="{{ request.url.path }}"
+  hx-get="{{ request.url.path }}"
+  hx-target="#workers-content"
+  hx-push-url="true"
+  hx-swap="innerHTML"
+  hx-trigger="submit, input changed delay:{{ htmx.input_changed_delay_ms }}ms from:#workers_q, search from:#workers_q, change from:#workers_filter"
+>
+  <input type="hidden" id="workers_sort" name="sort" value="{{ sort }}">
+  <input type="hidden" id="workers_order" name="order" value="{{ order }}">
+  <input type="hidden" id="workers_view" name="view" value="{{ view }}">
+
+  <div class="col-12 col-md-auto">
+    <label for="workers_filter" class="form-label">Last changed</label>
+    <select id="workers_filter" class="form-select" name="filter">
+      <option value="all-workers" {{ 'selected' if filter_value == 'all-workers' else '' }}>All</option>
+      <option value="le-5days" {{ 'selected' if filter_value == 'le-5days' else '' }}>Modified ≤ 5 days ago</option>
+      <option value="gt-5days" {{ 'selected' if filter_value == 'gt-5days' else '' }}>Modified &gt; 5 days ago</option>
+    </select>
+  </div>
+
+  <div class="col-12 col-md-auto">
+    <label for="workers_q" class="form-label">Filter worker</label>
+    <input
+      id="workers_q"
+      type="search"
+      name="q"
+      class="form-control"
+      value="{{ q }}"
+      placeholder="Filter worker"
+      autocomplete="off"
+    >
+  </div>
+</form>
+
+<div id="workers-content">
+  {% include "workers_content_fragment.html.j2" %}
+</div>
+{% endblock %}

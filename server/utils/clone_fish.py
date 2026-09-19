@@ -6,7 +6,7 @@ import requests
 from pymongo import ASCENDING, MongoClient
 
 # fish_host = 'http://localhost:6543'
-fish_host = "http://94.198.98.239"  # 'http://tests.stockfishchess.org'
+fish_host = "http://94.198.98.239"  # 'http://YOUR_DEFENCETEST_HOST'
 
 conn = MongoClient("localhost")
 
@@ -21,7 +21,7 @@ pgndb.ensure_index([("run_id", ASCENDING)])
 
 
 def main():
-    """Clone a fishtest database with PGNs and runs with the REST API"""
+    """Clone a defencetest database with PGNs and runs with the REST API"""
     skip = 0
     count = 0
     in_sync = False

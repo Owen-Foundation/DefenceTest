@@ -33,8 +33,8 @@ from datetime import UTC, datetime, timedelta
 from pymongo import DESCENDING
 from pymongo.collection import Collection
 
-from fishtest.rundb import RunDb
-from fishtest.util import estimate_game_duration
+from defencetest.rundb import RunDb
+from defencetest.util import estimate_game_duration
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(message)s")
 logger = logging.getLogger(__name__)

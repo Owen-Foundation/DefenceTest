@@ -13,7 +13,7 @@ import sys
 
 from pymongo import MongoClient
 
-db_name = "fishtest_new"
+db_name = "defencetest_new"
 
 # MongoDB server is assumed to be on the same machine, if not user should use
 # ssh with port forwarding to access the remote host.

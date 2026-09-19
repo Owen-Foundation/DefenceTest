@@ -58,7 +58,7 @@ jobs:
         id: prettier-format
         continue-on-error: true
         run: |
-          npx prettier --check "server/fishtest/static/{css/*.css,html/*.html,js/*.js}"
+          npx prettier --check "server/defencetest/static/{css/*.css,html/*.html,js/*.js}"
 
       - name: Check linters and formatters status
         run: |
@@ -74,4 +74,4 @@ jobs:
           echo "Run the following commands to format the code:"
           echo "uv run ruff check --fix"
           echo "uv run ruff format"
-          echo "npx prettier --write 'server/fishtest/static/{css/*.css,html/*.html,js/*.js}'"
+          echo "npx prettier --write 'server/defencetest/static/{css/*.css,html/*.html,js/*.js}'"

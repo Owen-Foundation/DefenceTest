@@ -1,7 +1,8 @@
 [project]
-name = "fishtest-worker"
+name = "defencetest-worker"
 version = "0.1.0"
-description = "fishtest-worker"
+license = { text = "GPL-3.0-only" }
+description = "defencetest-worker"
 requires-python = ">=3.8"
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -19,9 +20,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://tests.stockfishchess.org"
-Repository = "https://github.com/official-stockfish/fishtest"
-Issues = "https://github.com/official-stockfish/fishtest"
+Homepage = "https://github.com/Owen-Foundation/DefenceTest"
+Repository = "https://github.com/Owen-Foundation/DefenceTest"
+Issues = "https://github.com/Owen-Foundation/DefenceTest"
 
 [build-system]
 requires = ["hatchling>=1.27.0"]
@@ -32,7 +33,7 @@ include = [
     "worker.py",
     "games.py",
     "updater.py",
-    "fishtest.cfg",
+    "defencetest.cfg",
     "sri.txt",
     "packages/**",
 ]

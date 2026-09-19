@@ -10,9 +10,9 @@ import requests
 import test_support
 from vtjson import ValidationError, validate
 
-import fishtest.github_api as gh
-from fishtest.schemas import books_schema, github_repo, github_repo_input
-from fishtest.views import get_master_info, get_sha
+import defencetest.github_api as gh
+from defencetest.schemas import books_schema, github_repo, github_repo_input
+from defencetest.views import get_master_info, get_sha
 
 
 class CreateGitHubApiTest(unittest.TestCase):
@@ -39,8 +39,8 @@ class CreateGitHubApiTest(unittest.TestCase):
                 r"[1-9]\d{5,7}|None",
                 str(
                     get_master_info(
-                        user="official-stockfish",
-                        repo="Stockfish",
+                        user="Owen-Foundation",
+                        repo="Owen",
                     )["bench"]
                 ),
             )
@@ -148,7 +148,7 @@ class RepoSchemaValidationTests(unittest.TestCase):
     def test_github_repo_input_accepts_trailing_slash(self):
         validate(
             github_repo_input,
-            "https://github.com/official-stockfish/Stockfish/",
+            "https://github.com/Owen-Foundation/Owen/",
             name="tests_repo",
         )
 
@@ -156,7 +156,7 @@ class RepoSchemaValidationTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             validate(
                 github_repo,
-                "https://github.com/official-stockfish/Stockfish/",
+                "https://github.com/Owen-Foundation/Owen/",
                 name="tests_repo",
             )
 
@@ -164,7 +164,7 @@ class RepoSchemaValidationTests(unittest.TestCase):
 class MasterInfoRobustnessTests(unittest.TestCase):
     def test_get_master_info_returns_stable_shape_on_exception(self):
         with mock.patch(
-            "fishtest.views.gh.get_commits",
+            "defencetest.views.gh.get_commits",
             side_effect=requests.exceptions.ConnectionError("boom"),
         ):
             info = get_master_info(ignore_rate_limit=True)
@@ -176,7 +176,7 @@ class MasterInfoRobustnessTests(unittest.TestCase):
 
     def test_get_master_info_handles_unexpected_payload_shapes(self):
         for payload in ({"message": "API rate limit exceeded"}, [], None):
-            with mock.patch("fishtest.views.gh.get_commits", return_value=payload):
+            with mock.patch("defencetest.views.gh.get_commits", return_value=payload):
                 info = get_master_info(ignore_rate_limit=True)
             self.assertIsInstance(info, dict)
             self.assertIn("bench", info)
@@ -199,7 +199,7 @@ class MasterInfoRobustnessTests(unittest.TestCase):
                 }
             },
         ]
-        with mock.patch("fishtest.views.gh.get_commits", return_value=payload):
+        with mock.patch("defencetest.views.gh.get_commits", return_value=payload):
             info = get_master_info(ignore_rate_limit=True)
 
         self.assertEqual(info["bench"], "1234567")
@@ -208,47 +208,47 @@ class MasterInfoRobustnessTests(unittest.TestCase):
 class GetShaRobustnessTests(unittest.TestCase):
     def test_get_sha_handles_non_dict_payload(self):
         with mock.patch(
-            "fishtest.views.gh.get_commit",
+            "defencetest.views.gh.get_commit",
             return_value=None,
         ):
-            sha, message = get_sha("master", "https://github.com/user/Stockfish")
+            sha, message = get_sha("master", "https://github.com/user/Owen")
 
         self.assertEqual(sha, "")
         self.assertEqual(message, "")
 
     def test_get_sha_handles_missing_or_invalid_sha(self):
         with mock.patch(
-            "fishtest.views.gh.get_commit",
+            "defencetest.views.gh.get_commit",
             return_value={"commit": {"message": "hello"}},
         ):
-            sha, message = get_sha("master", "https://github.com/user/Stockfish")
+            sha, message = get_sha("master", "https://github.com/user/Owen")
 
         self.assertEqual(sha, "")
         self.assertEqual(message, "")
 
     def test_get_sha_handles_missing_commit_message(self):
         with mock.patch(
-            "fishtest.views.gh.get_commit",
+            "defencetest.views.gh.get_commit",
             return_value={"sha": "a" * 40, "commit": {}},
         ):
-            sha, message = get_sha("master", "https://github.com/user/Stockfish")
+            sha, message = get_sha("master", "https://github.com/user/Owen")
 
         self.assertEqual(sha, "a" * 40)
         self.assertEqual(message, "")
 
     def test_get_sha_handles_non_string_message(self):
         with mock.patch(
-            "fishtest.views.gh.get_commit",
+            "defencetest.views.gh.get_commit",
             return_value={"sha": "b" * 40, "commit": {"message": None}},
         ):
-            sha, message = get_sha("master", "https://github.com/user/Stockfish")
+            sha, message = get_sha("master", "https://github.com/user/Owen")
 
         self.assertEqual(sha, "b" * 40)
         self.assertEqual(message, "")
 
 
 class RepoCanonicalizationTests(unittest.TestCase):
-    repo_url = "https://github.com/official-stockfish/Stockfish"
+    repo_url = "https://github.com/Owen-Foundation/Owen"
 
     def tearDown(self):
         gh.clear_api_cache()
@@ -266,7 +266,7 @@ class RepoCanonicalizationTests(unittest.TestCase):
         response = mock.Mock()
         response.url = self.repo_url + "/"
 
-        with mock.patch("fishtest.github_api.call", return_value=response) as call:
+        with mock.patch("defencetest.github_api.call", return_value=response) as call:
             normalized = gh.normalize_repo(self.repo_url + "/")
 
         self.assertEqual(normalized, self.repo_url)
@@ -283,7 +283,7 @@ class RepoCanonicalizationTests(unittest.TestCase):
         response = mock.Mock()
         response.url = self.repo_url
 
-        with mock.patch("fishtest.github_api.call", return_value=response) as call:
+        with mock.patch("defencetest.github_api.call", return_value=response) as call:
             normalized_with_slash = gh.normalize_repo(self.repo_url + "/")
             normalized_without_slash = gh.normalize_repo(self.repo_url)
 
@@ -311,10 +311,10 @@ class GitHubApiRetryTests(unittest.TestCase):
             gh._api_initialized = True
             with (
                 mock.patch(
-                    "fishtest.github_api.requests.request",
+                    "defencetest.github_api.requests.request",
                     side_effect=side_effect,
                 ) as req,
-                mock.patch("fishtest.github_api.time.sleep") as _sleep,
+                mock.patch("defencetest.github_api.time.sleep") as _sleep,
             ):
                 r = gh.call("https://api.github.com/rate_limit", timeout=0.01)
             return r, req.call_count

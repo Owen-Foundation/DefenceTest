@@ -57,7 +57,7 @@ class WorkerTest(unittest.TestCase):
         self.assertTrue(config.has_option("parameters", "concurrency"))
 
     def test_worker_script_with_bad_args(self):
-        self.assertFalse((self.worker_dir / "fishtest.cfg").exists())
+        self.assertFalse((self.worker_dir / "defencetest.cfg").exists())
         p = subprocess.run([sys.executable, "worker.py", "--no-validation"])
         self.assertEqual(p.returncode, 1)
 

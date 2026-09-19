@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 import test_support
 from vtjson import ValidationError
 
-from fishtest.http.settings import (
+from defencetest.http.settings import (
     HTMX_INPUT_CHANGED_DELAY_MS,
     UI_STATE_COOKIE_MAX_AGE_SECONDS,
 )

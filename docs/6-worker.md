@@ -3,9 +3,28 @@
 ## Overview
 
 The worker is a standalone Python application (Python >= 3.8) that runs on
-contributor machines. It fetches testing tasks from the fishtest server,
-compiles Stockfish from source, runs games via fastchess, and reports
+contributor machines. It fetches testing tasks from the defencetest server,
+compiles Owen from source, runs games via fastchess, and reports
 results back.
+
+## Contributing games (for volunteers)
+
+Running the worker **is** how games get submitted — there are no manual
+uploads. The loop is fully automatic:
+
+1. Create an account on the DefenceTest server and wait for approval.
+2. Run the worker (see [Configuration file](#configuration-file)):
+   `python worker.py USERNAME PASSWORD --host <server-host> --port 443`
+3. The worker heartbeats (`POST /api/beat`), pulls tasks
+   (`POST /api/request_task`), builds both engines from source, plays the
+   games, then submits W/D/L (`POST /api/update_task`) plus the PGN
+   (`POST /api/upload_pgn`). Failures go to `POST /api/failed_task`.
+4. The server aggregates everything into per-test Elo/SPRT statistics.
+
+The current public server host is published in the Testing section of the
+Owen homepage. Note: while the server is exposed via a Cloudflare quick
+tunnel, its hostname changes on tunnel restart — always copy the host shown
+on the homepage (or ask the maintainer) before launching a worker.
 
 Source files:
 
@@ -14,7 +33,7 @@ Source files:
 | `worker/worker.py` | Main control loop, configuration, signal handling, heartbeat |
 | `worker/games.py` | Engine compilation, game execution, fastchess output parsing |
 | `worker/updater.py` | Self-update mechanism |
-| `worker/fishtest.cfg` | Persistent configuration (credentials, tuning parameters) |
+| `worker/defencetest.cfg` | Persistent configuration (credentials, tuning parameters) |
 
 ## Constants
 
@@ -53,10 +72,10 @@ flowchart TD
 
 ### `worker()` -- entry point
 
-1. Acquire a file lock (`fishtest_worker.lock`) to prevent multiple instances
+1. Acquire a file lock (`defencetest_worker.lock`) to prevent multiple instances
    in the same directory.
 2. Install signal handlers (SIGINT, SIGTERM, SIGQUIT, SIGBREAK).
-3. Call `setup_parameters()` to read/validate `fishtest.cfg`, probe hardware,
+3. Call `setup_parameters()` to read/validate `defencetest.cfg`, probe hardware,
    parse CLI arguments, validate credentials, and write config back.
 4. Write SRI hashes (`sri.txt`).
 5. If `--only_config` was passed, exit.
@@ -130,7 +149,7 @@ of the current task.
 
 ## Configuration file
 
-File: `worker/fishtest.cfg` -- INI format, managed by `ConfigParser`.
+File: `worker/defencetest.cfg` -- INI format, managed by `ConfigParser`.
 
 ### Sections and options
 
@@ -141,7 +160,7 @@ password = mypassword
 
 [parameters]
 protocol = https                          ; http or https
-host = tests.stockfishchess.org
+host = YOUR_DEFENCETEST_HOST
 port = 443
 concurrency = max(1,min(3,MAX-1))         ; expression using MAX = cpu_count
 max_memory = MAX/2                        ; expression using MAX = total_ram_MiB
@@ -168,7 +187,7 @@ Usage: `python worker.py [USERNAME PASSWORD] [OPTIONS]`
 | Flag | Short | Type | Default | Description |
 |------|-------|------|---------|-------------|
 | `--protocol` | `-P` | `{http,https}` | `https` | Protocol for server communication |
-| `--host` | `-n` | string | `tests.stockfishchess.org` | Server hostname |
+| `--host` | `-n` | string | `YOUR_DEFENCETEST_HOST` | Server hostname |
 | `--port` | `-p` | int | `443` | Server port |
 | `--concurrency` | `-c` | expression | `max(1,min(3,MAX-1))` | Max cores to use (`MAX` = cpu_count) |
 | `--max_memory` | `-m` | expression | `MAX/2` | Max memory in MiB (`MAX` = total RAM) |
@@ -253,7 +272,7 @@ networks). Writes use atomic `link()` to avoid partial-file races.
 | Pattern | Keep | Expiration |
 |---------|------|------------|
 | `fastchess` | 1 | never |
-| `stockfish-*` | 50 | 30 days |
+| `owen-*` | 50 | 30 days |
 | `nn-*.nnue` | 10 | 30 days |
 | `results-*.pgn` | 10 | 30 days |
 | `*.epd` | 4 | 365 days |
@@ -263,11 +282,11 @@ Files are sorted by access time; the most recently accessed are preserved.
 
 ## API endpoints used by the worker
 
-All fishtest endpoints use JSON-encoded POST bodies with `password` and
+All defencetest endpoints use JSON-encoded POST bodies with `password` and
 `worker_info` fields. Responses are JSON dicts that may contain an `error`
 key.
 
-### Fishtest server endpoints
+### DefenceTest server endpoints
 
 | Endpoint | Method | Phase | Purpose |
 |----------|--------|-------|---------|
@@ -289,7 +308,7 @@ key.
 | `https://api.github.com/rate_limit` | GET | Check remaining API quota |
 | `https://api.github.com/repos/Disservin/fastchess/zipball/{sha}` | GET | Download fastchess source |
 | `https://api.github.com/repos/{user}/{repo}/zipball/{sha}` | GET | Download engine source |
-| `https://api.github.com/repos/official-stockfish/books/...` | GET | Download opening books |
+| `https://api.github.com/repos/Owen-Foundation/books/...` | GET | Download opening books |
 | `https://raw.githubusercontent.com/...` | GET | Download files (fallback) |
 
 ## Exception hierarchy
@@ -310,7 +329,7 @@ The worker writes to `api.log` in its working directory. Each line records
 the server-side and worker-side latency of API calls:
 
 ```
-2025-01-15 12:00:00+00:00 : 1.23 ms (s)  45.67 ms (w)  https://tests.stockfishchess.org/api/update_task
+2025-01-15 12:00:00+00:00 : 1.23 ms (s)  45.67 ms (w)  https://YOUR_DEFENCETEST_HOST/api/update_task
 ```
 
 On self-update, the log is rotated to `api.log.previous`.

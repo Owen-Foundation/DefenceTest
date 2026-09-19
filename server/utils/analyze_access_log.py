@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Analyze Nginx access logs grouped by Fishtest FastAPI routes.
+"""Analyze Nginx access logs grouped by DefenceTest FastAPI routes.
 
-This utility introspects the local Fishtest FastAPI app to discover routes and
+This utility introspects the local DefenceTest FastAPI app to discover routes and
 then aggregates timing stats from Nginx access logs per route prefix.
 
 By default, the CLI analyzes all lines from ``/var/log/nginx/access.log``.
@@ -254,7 +254,7 @@ def _discover_fastapi_routes() -> list[str]:
     sys.path.insert(0, str(server_dir))
 
     apiroute = importlib.import_module("fastapi.routing").APIRoute
-    create_app = importlib.import_module("fishtest.app").create_app
+    create_app = importlib.import_module("defencetest.app").create_app
     app = create_app()
 
     paths = {

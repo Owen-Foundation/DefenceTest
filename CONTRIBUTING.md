@@ -1,6 +1,6 @@
-# Contributing to Fishtest
+# Contributing to DefenceTest
 
-Thank you for your interest in contributing to Fishtest! This guide covers
+Thank you for your interest in contributing to DefenceTest! This guide covers
 the development workflow and coding standards for the project.
 
 ## Getting Started
@@ -18,8 +18,8 @@ the development workflow and coding standards for the project.
 
 ```bash
 # Clone the repository
-git clone https://github.com/official-stockfish/fishtest.git
-cd fishtest
+git clone https://github.com/Owen-Foundation/DefenceTest.git
+cd defencetest
 
 # Install development dependencies (pre-commit, ruff, ty)
 uv sync
@@ -35,10 +35,10 @@ uv run pre-commit install
 
 ```bash
 cd server
-FISHTEST_INSECURE_DEV=1 uv run uvicorn fishtest.app:app --reload --port 8000
+DEFENCETEST_INSECURE_DEV=1 uv run uvicorn defencetest.app:app --reload --port 8000
 ```
 
-Setting `FISHTEST_INSECURE_DEV=1` enables an insecure fallback secret key
+Setting `DEFENCETEST_INSECURE_DEV=1` enables an insecure fallback secret key
 for cookie signing. This must **never** be used in production.
 
 ### Running Tests
@@ -70,7 +70,7 @@ uv run ruff check
 - Format with [Prettier](https://prettier.io/):
 
 ```bash
-npx prettier --write 'server/fishtest/static/{css/*.css,html/*.html,js/*.js}'
+npx prettier --write 'server/defencetest/static/{css/*.css,html/*.html,js/*.js}'
 ```
 
 ### Pre-commit Hooks
@@ -112,9 +112,9 @@ git commit --no-verify -m "message"
 ## Project Structure
 
 ```
-fishtest/
+defencetest/
 ├── server/
-│   ├── fishtest/           # Server application
+│   ├── defencetest/           # Server application
 │   │   ├── app.py          # FastAPI application entry point
 │   │   ├── views.py        # Route handlers
 │   │   ├── api.py          # Worker API endpoints
@@ -134,6 +134,6 @@ fishtest/
 - [Architecture Overview](docs/1-architecture.md) — server design and
   threading model.
 - [API Reference](docs/3-api-reference.md) — worker API endpoints.
-- [Wiki Contributing Page](https://github.com/official-stockfish/fishtest/wiki/Contributing-to-Fishtest) - development environment setup, coding styles, development wrokflow.
-- [Coding Style Guide (Issue #634)](https://github.com/official-stockfish/fishtest/issues/634)
+- [Wiki Contributing Page](https://github.com/Owen-Foundation/DefenceTest/wiki/Contributing-to-DefenceTest) - development environment setup, coding styles, development wrokflow.
+- [Coding Style Guide (Issue #634)](https://github.com/Owen-Foundation/DefenceTest/issues/634)
   — original style discussion.

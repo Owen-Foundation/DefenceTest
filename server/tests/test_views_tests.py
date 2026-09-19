@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from ui_user_test_case import UiUserTestCase
 
-from fishtest.http.settings import UI_STATE_COOKIE_MAX_AGE_SECONDS
+from defencetest.http.settings import UI_STATE_COOKIE_MAX_AGE_SECONDS
 
 
 class TestTestsHomepage(UiUserTestCase):
@@ -656,7 +656,7 @@ class TestTestsHomepage(UiUserTestCase):
     def test_notifications_js_reinitializes_after_htmx_swaps(self):
         js_path = (
             Path(__file__).resolve().parents[1]
-            / "fishtest"
+            / "defencetest"
             / "static"
             / "js"
             / "notifications.js"

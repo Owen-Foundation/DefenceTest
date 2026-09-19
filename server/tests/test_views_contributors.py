@@ -6,7 +6,7 @@ from pathlib import Path
 
 from ui_user_test_case import UiUserTestCase
 
-from fishtest.http.settings import HTMX_INPUT_CHANGED_DELAY_MS
+from defencetest.http.settings import HTMX_INPUT_CHANGED_DELAY_MS
 
 
 class TestViewsContributors(UiUserTestCase):
@@ -485,7 +485,7 @@ class TestViewsContributors(UiUserTestCase):
     def test_contributors_js_uses_single_root_path_cookie(self):
         js_path = (
             Path(__file__).resolve().parents[1]
-            / "fishtest"
+            / "defencetest"
             / "static"
             / "js"
             / "contributors.js"

@@ -1,0 +1,964 @@
+{% extends "base.html.j2" %}
+
+{% block title %}{{ page_title }} | DefenceTest{% endblock %}
+
+{% block body %}
+{% set run_id = run["_id"] | string %}
+<script>
+  const runId = {{ run_id | tojson }};
+</script>
+<script
+  src="https://cdn.jsdelivr.net/npm/diff@9.0.0/dist/diff.min.js"
+  integrity="sha256-tRqdKIXywJDcl7mBAnOV9+fmVYpGx1rjdH2yZ5E6ias="
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer"
+></script>
+
+{% if show_task >= 0 %}
+  <script>
+    document.documentElement.style="scroll-behavior:auto; overflow:hidden;";
+    function scroll_to(task_id) {
+      const task_row = document.getElementById("task" + task_id);
+      const tasks_section = document.getElementById("tasks");
+      const tasks_container = document.getElementById("tasks-content");
+      const tasks_head = tasks_container?.querySelector("thead");
+      if (!task_row || !tasks_section || !tasks_container) {
+        return;
+      }
+      tasks_section.scrollIntoView();
+      const container_rect = tasks_container.getBoundingClientRect();
+      const row_rect = task_row.getBoundingClientRect();
+      const head_height = tasks_head?.getBoundingClientRect().height ?? 0;
+      const target_scroll_top =
+        tasks_container.scrollTop + row_rect.top - container_rect.top - head_height;
+      const max_scroll_top = Math.max(
+        0,
+        tasks_container.scrollHeight - tasks_container.clientHeight,
+      );
+      tasks_container.scrollTop = Math.min(
+        Math.max(0, target_scroll_top),
+        max_scroll_top,
+      );
+    }
+  </script>
+{% endif %}
+
+{% if follow == 1 and current_user and run["args"]["username"] == current_user["username"] %}
+  <script>
+    (async () => {
+      await DOMContentLoaded();
+      await followRun(runId);
+      setNotificationStatus(runId);
+    })();
+  </script>
+{% else %}
+  <script>
+    (async () => {
+      await DOMContentLoaded();
+      setNotificationStatus_(runId);
+    })();
+  </script>
+{% endif %}
+
+{% if "spsa" in run["args"] %}
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <script src="{{ static_url("defencetest:static/js/spsa.js") }}"></script>
+
+  <script>
+    const spsaPromise = handleSPSA();
+  </script>
+{% else %}
+  <script>
+    const spsaPromise = Promise.resolve();
+  </script>
+{% endif %}
+
+<div id="enclosure"{% if show_task >= 0 %} style="visibility:hidden;"{% endif %}>
+  <h2>
+    <span>{{ page_title }}</span>
+    <a href="{{ diff_url(run, master_check=allow_github_api_calls) }}" target="_blank" rel="noopener noreferrer">diff</a>
+    <span id="run-status-{{ run_id }}">{{ run_status_label }}</span>
+  </h2>
+
+    <div id="elo-{{ run_id }}" class="elo-results-top">
+    {% include "elo_results.html.j2" %}
+  </div>
+
+  {% if not run["finished"] %}
+    <input
+      type="hidden"
+      id="tests-view-detail-expected"
+      name="expected"
+      value="{{ run_status_label }}"
+    >
+    <div hx-get="/tests/view/{{ run_id }}/detail"
+      hx-include="#tests-view-detail-expected"
+      hx-trigger="every {{ poll.tests_view_detail }}s [document.visibilityState === 'visible'], visibilitychange[document.visibilityState === 'visible'] from:document"
+      hx-swap="none">
+    </div>
+  {% endif %}
+
+  <div class="row">
+    <div class="col-12 col-lg-9">
+      <div id="diff-section">
+        <h4>
+          <button id="diff-toggle" class="btn btn-sm btn-light border mb-2">Show</button>
+          Diff
+          <span id="diff-num-comments">(0 comments)</span>
+          <a
+            href="{{ diff_url(run, master_check=allow_github_api_calls) }}"
+            class="btn btn-primary bg-light-primary border-0 mb-2"
+            target="_blank" rel="noopener noreferrer"
+          >
+            View on GitHub
+          </a>
+
+          <a
+            href="javascript:"
+            id="copy-diff"
+            class="btn btn-secondary bg-light-secondary border-0 mb-2"
+            style="display: none"
+          >
+            Copy apply-diff command
+          </a>
+
+          <a
+            href="javascript:"
+            id="master_vs_official_master" class="btn btn-danger  border-0 mb-2"
+            title="Compares master to official-master at the time of submission"
+            style="display: none">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+              <span> master vs official</span>
+            </a>
+
+          <span class="text-success copied text-nowrap" style="display: none">Copied!</span>
+        </h4>
+        <pre id="diff-contents" style="display: none;"><code class="diff"></code></pre>
+        <div id="diff-error" class="text-danger" hidden></div>
+      </div>
+      {% include "tests_view_details_section.html.j2" %}
+    </div>
+
+    <div class="col-12 col-lg-3">
+      <h4>Actions</h4>
+      <div class="row g-2 mb-2">
+        {% if can_modify_run %}
+          {% if not run["finished"] %}
+            <div class="col-12 col-sm">
+              <form action="/tests/stop" method="POST" data-stop-delete-run-id="{{ run_id }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="run-id" value="{{ run_id }}">
+                <button type="submit" class="btn btn-danger w-100">Stop</button>
+              </form>
+            </div>
+
+            {% if not run.get("approved", False) and not same_user %}
+              <div class="col-12 col-sm">
+                <form action="/tests/approve" method="POST">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                  <input type="hidden" name="run-id" value="{{ run_id }}">
+                  <button type="submit" id="approve-btn"
+                          class="btn {{ "btn-success" if warnings == [] else "btn-warning" }} w-100">
+                    Approve
+                  </button>
+                </form>
+              </div>
+            {% endif %}
+
+          {% else %}
+            <div class="col-12 col-sm">
+              <form action="/tests/purge" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="run-id" value="{{ run_id }}">
+                <button type="submit" class="btn btn-danger w-100">Purge</button>
+              </form>
+            </div>
+          {% endif %}
+        {% endif %}
+
+        <div class="col-12 col-sm">
+          <button id="download_games" class="btn btn-primary text-nowrap w-100">
+            Download games
+          </button>
+        </div>
+        <div class="col-12 col-sm">
+          <a class="btn btn-light border w-100" href="/tests/run?id={{ run_id }}">Reschedule</a>
+        </div>
+      </div>
+      <hr>
+      {% if warnings != [] %}
+        <div class="alert alert-danger">
+          {% for warning in warnings %}
+            Warning: {{ warning }}
+            {% if not loop.last %}
+              <hr style="margin: 0.4em auto;">
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if notes != [] %}
+        <div class="alert alert-info">
+          {% for note in notes %}
+            Note: {{ note }}
+            {% if not loop.last %}
+              <hr style="margin: 0.4em auto;">
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <hr>
+
+      {% if can_modify_run %}
+        <form class="form" action="/tests/modify" method="POST">
+          <div class="mb-3">
+            <label class="form-label" for="modify-num-games">Number of games</label>
+            <input
+              type="number"
+              class="form-control"
+              name="num-games"
+              id="modify-num-games"
+              min="{{ modify_num_games_constraints.min }}"
+              step="{{ modify_num_games_constraints.step }}"
+              value="{{ run["args"]["num_games"] }}"
+            >
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="modify-priority">Priority (higher is more urgent)</label>
+            <input
+              type="number"
+              class="form-control"
+              name="priority"
+              id="modify-priority"
+              value="{{ run["args"]["priority"] }}"
+            >
+          </div>
+
+          <label class="form-label" for="modify-throughput">Throughput</label>
+          <div class="mb-3 input-group">
+            <input
+              type="number"
+              class="form-control"
+              name="throughput"
+              id="modify-throughput"
+              min="0"
+              value="{{ run["args"].get("throughput", 1000) }}"
+            >
+            <span class="input-group-text">%</span>
+          </div>
+
+          {% if same_user %}
+            <div class="mb-3">
+              <label for="info" class="form-label">
+                Info
+              </label>
+              <textarea
+                id="modify-info"
+                name="info"
+                placeholder="Defaults to submitted message."
+                class="form-control"
+                rows="4"
+                style="height: 149px;"
+              ></textarea>
+            </div>
+          {% endif %}
+
+          <div class="mb-3 form-check">
+            <input
+              type="checkbox"
+              class="form-check-input"
+              id="auto-purge"
+              name="auto_purge" {{ "checked" if run["args"].get("auto_purge") else "" }}
+            >
+            <label class="form-check-label" for="auto-purge">Auto-purge</label>
+          </div>
+
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="run" value="{{ run_id }}">
+          <button type="submit" class="btn btn-primary col-12 col-md-auto">Modify</button>
+        </form>
+      {% endif %}
+
+      {% if "spsa" not in run["args"] %}
+        {% include "tests_view_stats_section.html.j2" %}
+      {% endif %}
+
+      {% include "tests_view_time_section.html.j2" %}
+
+      <hr>
+      {% if not run["finished"] %}
+        <h4>Notifications</h4>
+        <button
+          id="follow_button_{{ run_id }}"
+          class="btn btn-primary col-12 col-md-auto"
+          style="display:none; margin-top:0.2em;"></button>
+        <hr style="visibility:hidden;">
+      {% endif %}
+    </div>
+  </div>
+
+  {% if "spsa" in run["args"] %}
+    {% include "tests_view_spsa_section.html.j2" %}
+  {% endif %}
+
+  <h4>
+    <a
+      id="tasks-button"
+      class="btn btn-sm btn-light border"
+      data-toggle-cookie-max-age="{{ cookies.ui_state_max_age }}"
+      data-bs-toggle="collapse"
+      href="#tasks"
+      role="button"
+      aria-expanded="false"
+      aria-controls="tasks"
+    >
+      {{ "Hide" if tasks_shown else "Show" }}
+    </a>
+    Tasks <span id="tasks-totals">{{ tasks_totals }}</span>
+  </h4>
+  <section
+    id="tasks"
+    class="collapse {{ "show" if tasks_shown else "" }}"
+  >
+    <form
+      id="tasks-filters"
+      class="row g-2 align-items-end mb-2"
+      method="get"
+      action="/tests/tasks/{{ run_id }}?show_task={{ show_task }}"
+      hx-get="/tests/tasks/{{ run_id }}?show_task={{ show_task }}"
+      hx-target="#tasks-content"
+      hx-swap="innerHTML"
+      hx-trigger="submit, input changed delay:{{ htmx.input_changed_delay_ms }}ms from:#tasks_q, search from:#tasks_q"
+    >
+      <input type="hidden" id="tasks_sort" name="sort" value="{{ tasks_sort }}">
+      <input type="hidden" id="tasks_order" name="order" value="{{ tasks_order }}">
+      <input type="hidden" id="tasks_view" name="view" value="{{ tasks_view }}">
+      <input type="hidden" id="tasks_page" name="page" value="{{ tasks_page }}">
+
+      <div class="col-auto">
+        <input
+          id="tasks_q"
+          type="search"
+          name="q"
+          class="form-control form-control-sm"
+          value="{{ tasks_q }}"
+          placeholder="Filter worker or info"
+          aria-label="Filter worker or info"
+          autocomplete="off"
+        >
+      </div>
+
+      <div id="tasks-view-controls" class="col-auto">
+        {% with sort=tasks_sort, order=tasks_order, q=tasks_q, view=tasks_view, num_tasks=tasks_num_tasks, max_all=tasks_max_all, is_truncated=tasks_is_truncated %}
+          {% include "tasks_controls_fragment.html.j2" %}
+        {% endwith %}
+      </div>
+    </form>
+
+    {% set pagination_hx_target = "tasks-content" %}
+    {% set pagination_hx_push_url = false %}
+    {% set pagination_hx_disinherit = "hx-include" %}
+    {% set pagination_hx_params = "none" %}
+    <div id="tasks-pagination" aria-live="polite">
+      {% if tasks_view == "paged" %}
+        {% with pages=tasks_pages %}
+          {% include "pagination.html.j2" %}
+        {% endwith %}
+      {% endif %}
+    </div>
+
+    <div id="tasks-content"
+      data-tasks-loaded="0"
+      class="overflow-auto tasks-panel-scroll"
+      hx-get="/tests/tasks/{{ run_id }}?show_task={{ show_task }}"
+      hx-include="#tasks-filters"
+      hx-sync="#tasks-filters:abort"
+      hx-trigger="{% if tasks_shown %}load, tasks:load{% else %}tasks:load{% endif %}{% if not run['finished'] %}, every {{ poll.tasks_detail }}s [document.visibilityState === 'visible' && document.getElementById('tasks').classList.contains('show')], visibilitychange[document.visibilityState === 'visible' && document.getElementById('tasks').classList.contains('show')] from:document{% endif %}"
+      hx-swap="innerHTML"
+    ></div>
+  </section>
+{# End of enclosing div to be able to make things invisible. #}
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.11.1/highlight.min.js"
+        integrity="sha256-xKOZ3W9Ii8l6NUbjR2dHs+cUyZxXuUcxVMb7jSWbk4E="
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"
+></script>
+
+<script>
+  let cookieTheme = readUiCookie("theme");
+  const currentTime = new Date().getTime();
+  const oneDayAgo = currentTime - (24 * 60 * 60 * 1000); // 24 hours ago in milliseconds
+
+  const setHighlightTheme = (theme) => {
+    const link = document.createElement("link");
+    if (theme === "dark") {
+      document.head
+        .querySelector('link[href*="styles/github.min.css"]')
+        ?.remove();
+      link["rel"] = "stylesheet";
+      link["crossOrigin"] = "anonymous";
+      link["referrerPolicy"] = "no-referrer";
+      link["href"] =
+        "https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.11.1/styles/github-dark.min.css";
+      link["integrity"] =
+        "sha256-nyCNAiECsdDHrr/s2OQsp5l9XeY2ZJ0rMepjCT2AkBk=";
+    } else {
+      document.head
+        .querySelector('link[href*="styles/github-dark.min.css"]')
+        ?.remove();
+      link["rel"] = "stylesheet";
+      link["crossOrigin"] = "anonymous";
+      link["referrerPolicy"] = "no-referrer";
+      link["href"] =
+        "https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.11.1/styles/github.min.css";
+      link["integrity"] =
+        "sha256-Oppd74ucMR5a5Dq96FxjEzGF7tTw2fZ/6ksAqDCM8GY=";
+    }
+    document.head.append(link);
+  };
+
+  if (!cookieTheme) {
+    setHighlightTheme(mediaTheme());
+  } else {
+    setHighlightTheme(cookieTheme);
+  }
+
+  try {
+    window
+      .matchMedia("(prefers-color-scheme: dark)")
+      .addEventListener("change", () => setHighlightTheme(mediaTheme()));
+  } catch (e) {
+    console.error(e);
+  }
+
+  document
+    .getElementById("sun")
+    .addEventListener("click", () => setHighlightTheme("light"));
+
+  document
+    .getElementById("moon")
+    .addEventListener("click", () => setHighlightTheme("dark"));
+
+  let downloading = false;
+  async function downloadPGNs(e) {
+    if (downloading) {
+      return;
+    }
+    downloading = true;
+    const button = e.currentTarget;
+    button.textContent = "Downloading...";
+    try {
+      const response = await fetch(`/api/run_pgns/${runId}.pgn.gz`);
+      if (!response.ok) {
+        if (response.status === 404) {
+          alertError("No games found for this run");
+        } else {
+          alertError("Unable to download PGNs");
+        }
+        return;
+      }
+      const contentLength = parseInt(response.headers.get('Content-Length'));
+      const contentLengthFormatted = formatBytes(contentLength);
+      const reader = response.body.getReader();
+      let receivedLength = 0;
+      let chunks = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        chunks.push(value);
+        receivedLength += value.length;
+
+        const progressFormatted = formatBytes(receivedLength);
+        button.textContent = progressFormatted + " / " + contentLengthFormatted;
+      }
+
+      // Combine all chunks into a single Blob
+      const blob = new Blob(chunks);
+
+      // Check if the blob is empty
+      if (blob.size === 0) {
+        alertError("Blob is empty!");
+        return;
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${runId}.pgn.gz`;
+      document.body.append(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (error) {
+      alertError("Network error: please check your network!");
+    } finally {
+      downloading = false;
+      button.textContent = "Download Games";
+    }
+  }
+
+  const downloadPGNsButton = document.getElementById("download_games");
+  downloadPGNsButton?.addEventListener("click", downloadPGNs);
+
+  let resolveTasksLoaded = null;
+  {% if show_task >= 0 %}
+  const tasksPromise = new Promise(resolve => { resolveTasksLoaded = resolve; });
+  {% else %}
+  const tasksPromise = Promise.resolve();
+  {% endif %}
+
+  const tasksContainer = document.getElementById("tasks-content");
+  const resolveTasksLoadedOnce = () => {
+    if (!tasksContainer) {
+      return;
+    }
+    tasksContainer.dataset.tasksLoaded = "1";
+    resolveTasksLoaded?.();
+    resolveTasksLoaded = null;
+  };
+
+  const clearTasksLoadingState = () => {
+    if (!tasksContainer) {
+      resolveTasksLoaded?.();
+      resolveTasksLoaded = null;
+      return;
+    }
+    tasksContainer.dataset.tasksLoaded = "0";
+    resolveTasksLoaded?.();
+    resolveTasksLoaded = null;
+  };
+
+  tasksContainer?.addEventListener("htmx:afterSwap", resolveTasksLoadedOnce);
+  tasksContainer?.addEventListener("htmx:responseError", clearTasksLoadingState);
+  tasksContainer?.addEventListener("htmx:sendError", clearTasksLoadingState);
+  if (tasksContainer && (tasksContainer.dataset.tasksLoaded === "1" || tasksContainer.children.length > 0)) {
+    resolveTasksLoadedOnce();
+  }
+
+  (async () => {
+    await DOMContentLoaded();
+    const btn = document.getElementById("tasks-button");
+    btn?.addEventListener("click", () => {
+      const active = btn.textContent.trim() === "Hide";
+      btn.textContent = active ? "Show" : "Hide";
+      writeUiCookie(
+        "tasks_state",
+        btn.textContent.trim(),
+        btn.dataset.toggleCookieMaxAge,
+      );
+      if (!active && tasksContainer && tasksContainer.dataset.tasksLoaded !== "1") {
+        tasksContainer.dataset.tasksLoaded = "loading";
+        htmx.trigger(tasksContainer, "tasks:load");
+      }
+    });
+  })();
+
+  const followButton = document.getElementById("follow_button_" + runId);
+  followButton?.addEventListener("click", (e) => {
+    handleFollowButton(e.currentTarget);
+  });
+
+  function addDiff (diffText, text) {
+    diffText.textContent = text;
+  }
+
+  function showDiffError(diffError, text) {
+    diffError.innerHTML = text;
+    diffError.hidden = false;
+  }
+
+  function asText(value) {
+    return typeof value === "string" ? value : "";
+  }
+
+  const fetchDiffThreeDots = async (diffApiUrl) => {
+    const token = localStorage.getItem("github_token");
+    const options = {
+      headers: {
+        Accept: "application/vnd.github.diff",
+      },
+    };
+    if (token) {
+      options.headers.Authorization = "Bearer " + token;
+    }
+    const text = asText(await fetchText(diffApiUrl, options));
+    const count = text === "" ? 0 : text.split("\n").length;
+    return {text: text, count: count};
+  };
+
+  function loadingButton() {
+    const button = document.getElementById("diff-toggle");
+    const span = document.createElement("span");
+    span.id = "loadingIcon";
+    const icon = document.createElement("i");
+    icon.className = "fas fa-spinner fa-spin";
+    span.append(icon);
+    button.replaceChildren();
+    button.append(span);
+  }
+
+  function showDiff(diffContents, diffText, numLines, copyDiffBtn, toggleBtn) {
+    // Hide large diffs by default
+    if (numLines < 50) {
+      diffContents.style.display = "";
+      if (copyDiffBtn) copyDiffBtn.style.display = "";
+      setTimeout(() => {
+        toggleBtn.textContent = "Hide";
+      }, 350);
+    } else {
+      diffContents.style.display = "none";
+      if (copyDiffBtn) copyDiffBtn.style.display = "none";
+      setTimeout(() => {
+        toggleBtn.textContent = "Show";
+      }, 350);
+    }
+  }
+
+  async function getFileContentFromGitHubApi(url, options) {
+    options.headers = options.headers || {};
+    options.headers["Accept"] = "application/vnd.github.raw+json";
+    try {
+      return asText(await fetchText(url, options));
+    } catch(e) {
+      if (e instanceof HTTPError) {
+        const status = e.response.status;
+        if (status === 404) {
+          return "";
+        }
+      }
+      throw e;
+    }
+  }
+
+  async function getFilesInBranch(apiUrl, branch, options) {
+    const url = apiUrl + "/git/trees/" + branch + "?recursive=1";
+    const data = await fetchJson(url, options);
+
+    const filesMap = new Map();
+    data.tree.forEach((entry) => {
+      if (entry.type === "blob") {
+        filesMap.set(entry.path, entry.sha);
+      }
+    });
+
+    return filesMap;
+  }
+
+
+  const diffContents = document.getElementById("diff-contents");
+  const diffError = document.getElementById("diff-error");
+  const diffText = diffContents.querySelector("code");
+  const toggleBtn = document.getElementById("diff-toggle");
+
+  const viewerIsApprover = {{ approver | tojson }};
+  // Latched once the approver scrolls an overflowing diff to its end, so the
+  // attention cue stops nagging after the full diff has actually been seen.
+  let diffReviewed = false;
+
+  function updateDiffOverflowWarning() {
+    // Nudge approvers when part of the diff is below the fold and must be
+    // scrolled into view. The cue is an outer pulsing ring (see CSS): drawn
+    // outside the box so the vertical scrollbar cannot mask it, and pulsing so
+    // it catches the eye. It is dropped once the diff is scrolled to the end.
+    if (!viewerIsApprover) return;
+    const visible =
+      diffContents.style.display !== "none" && diffContents.offsetParent !== null;
+    const overflowing = diffContents.scrollHeight > diffContents.clientHeight + 1;
+    if (visible && overflowing) {
+      const atBottom =
+        diffContents.scrollHeight - diffContents.scrollTop - diffContents.clientHeight <= 2;
+      if (atBottom) diffReviewed = true;
+    }
+    diffContents.classList.toggle(
+      "diff-overflow-warning",
+      visible && overflowing && !diffReviewed,
+    );
+  }
+
+  if (viewerIsApprover) {
+    window.addEventListener("resize", updateDiffOverflowWarning);
+    diffContents.addEventListener("scroll", updateDiffOverflowWarning, {
+      passive: true,
+    });
+  }
+
+  async function fetchDiffTwoDots(apiUrlNew, apiUrlBase, diffNew, diffBase, options) {
+    const [files1, files2] = await Promise.all([
+      getFilesInBranch(apiUrlBase, diffBase, options),
+      getFilesInBranch(apiUrlNew, diffNew, options),
+    ]);
+
+    const allFiles = new Set([...files1.keys(), ...files2.keys()]);
+
+    let diffs = await Promise.all(
+      Array.from(allFiles).map(async (filePath) => {
+        const sha1 = files1.get(filePath);
+        const sha2 = files2.get(filePath);
+
+        if (sha1 === sha2) {
+          // Skip files with the same SHA
+          return null;
+        }
+
+        const [content1, content2] = await Promise.all([
+          getFileContentFromGitHubApi(
+            apiUrlBase + "/contents/" + filePath + "?ref=" + diffBase, options
+          ),
+          getFileContentFromGitHubApi(
+            apiUrlNew + "/contents/" + filePath + "?ref=" + diffNew, options
+          ),
+        ]);
+
+        const diff = Diff.createPatch(
+          filePath,
+          asText(content1),
+          asText(content2),
+        );
+        if (diff.trim() !== "" && diff.trim().split("\n").length >= 5) {
+          return diff;
+        }
+        return null;
+      })
+    );
+
+    // Keep only generated patch strings.
+    diffs = diffs.filter((diff) => typeof diff === "string" && diff !== "");
+
+    if (diffs.length) {
+      return { text: diffs.join("\n"), count: diffs.length };
+    } else {
+      return { text: "", count: 0 };
+    }
+  }
+
+  async function fetchComments(diffApiUrl, options) {
+    // Fetch amount of comments
+    try {
+      const json = await fetchJson(diffApiUrl, options);
+      let numComments = 0;
+      json.commits.forEach(function (row) {
+        numComments += row.commit.comment_count;
+      });
+        document.getElementById("diff-num-comments").textContent =
+          "(" + numComments + " comments)";
+        document.getElementById("diff-num-comments").style.display = "";
+    } catch(e) {
+      console.log("Error fetching comments: "+e);
+    }
+  }
+
+  async function handleDiff() {
+    await DOMContentLoaded();
+    let copyDiffBtn = document.getElementById("copy-diff");
+    if (
+      document.queryCommandSupported &&
+      document.queryCommandSupported("copy")
+    ) {
+      copyDiffBtn.addEventListener("click", () => {
+        const textarea = document.createElement("textarea");
+        textarea.style.position = "fixed";
+        textarea.textContent = "curl -s {{ diff_url(run, master_check=allow_github_api_calls) }}.diff | git apply";
+        document.body.append(textarea);
+        textarea.select();
+        try {
+          document.execCommand("copy");
+          document.querySelector(".copied").style.display = "";
+        } catch (ex) {
+          console.warn("Copy to clipboard failed.", ex);
+        } finally {
+          document.body.removeChild(textarea);
+        }
+      });
+    } else {
+      copyDiffBtn = null;
+    }
+
+    const diffApiUrl = {{ diff_url(run, master_check=allow_github_api_calls) | tojson }}.replace(
+      "//github.com/",
+      "//api.github.com/repos/"
+    );
+
+    let dots = 2;
+
+    const token = localStorage.getItem("github_token");
+    const options = token ? {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    } : {};
+
+    const testRepo = {{ tests_repo(run) | tojson }};
+    const apiUrlNew = testRepo.replace(
+      "//github.com/",
+      "//api.github.com/repos/"
+    );
+
+    const diffNew = "{{ run["args"]["resolved_new"][:10] }}";
+    const apiOfficialMaster = "https://api.github.com/repos/Owen-Foundation/Owen";
+    const baseOfficialMaster = {{ gh.official_master_sha | tojson }};
+
+    {% if run["args"].get("spsa") %}
+      dots = 3;
+    {% elif use_3dot_diff %}
+      dots = 3;
+    {% else %}
+      const apiUrlBase = apiUrlNew;
+      const diffBase = "{{ run["args"]["resolved_base"][:10] }}";
+    {% endif %}
+
+    // Check if the diff is already in localStorage and use it if it is
+    let localStorageDiffs = JSON.parse(localStorage.getItem("localStorageDiffs")) || [];
+    localStorageDiffs = localStorageDiffs.filter(diff => diff?.timeStamp >= oneDayAgo);
+
+    const cachedRun = localStorageDiffs.find(diff => diff["id"] === runId && !diff["masterVsBase"]);
+    let text = cachedRun?.text;
+    let count = cachedRun?.lines || 0;
+
+    try {
+      loadingButton();
+      if (!text) {
+        let diffs;
+        if (dots === 2) {
+          diffs = await fetchDiffTwoDots(apiUrlNew, apiUrlBase, diffNew, diffBase, options);
+        } else if (dots === 3) {
+          diffs = await fetchDiffThreeDots(diffApiUrl);
+        }
+
+        text = diffs.text || "No diff available";
+        count = diffs.count || 0;
+
+        // Try to save the diff in localStorage
+        // It can throw an exception if there is not enough space
+        try {
+          localStorageDiffs.push({id: runId, text: text, lines: count, masterVsBase: false, timeStamp: currentTime});
+          localStorage.setItem("localStorageDiffs", JSON.stringify(localStorageDiffs));
+        } catch (e) {
+          console.warn("Could not save diff in localStorage");
+        }
+      }
+      fetchComments(diffApiUrl, options);
+    } catch (e) {
+      console.error(e);
+      text = "Unable to load GitHub diff right now. Please retry shortly.";
+      if(e instanceof HTTPError) {
+        const response = e.response;
+        const status = response.status;
+        if (status === 404) {
+          text = "No GitHub diff is available for this run.";
+        }
+        if (status === 401) {
+          text = `Unable to access the GitHub API with the current token.
+                  <br>Note: Apparently you are not allowed to use the GitHub API.
+                  This may be caused by an expired, revoked or otherwise invalid
+                  <a href='https://github.com/settings/personal-access-tokens'
+                  target='_blank' rel='noopener noreferrer'>GitHub personal access token</a> in your <a href='/user'>profile</a>.`
+        } else if(remainingApiCalls(response) === 0) {
+          text = `GitHub API rate limit exceeded.
+                  <br>Note: Apparently the <a href='/rate_limits'>GitHub API rate limit</a> was exceeded.
+                  Try to add a <a href='https://github.com/settings/personal-access-tokens'
+                  target='_blank' rel='noopener noreferrer'>GitHub personal access token</a> to your <a href='/user'>profile</a>
+                  or else use 'View on GitHub'.`
+        }
+      }
+      showDiffError(diffError, text);
+      toggleBtn.hidden = true;
+      return;
+    }
+
+
+    addDiff(diffText, text);
+    showDiff(diffContents, diffText, count, copyDiffBtn, toggleBtn);
+    hljs.highlightElement(diffText);
+    requestAnimationFrame(updateDiffOverflowWarning);
+    toggleBtn.addEventListener("click", function () {
+        diffContents.style.display =
+          diffContents.style.display === "none" ? "" : "none";
+        if (copyDiffBtn)
+          copyDiffBtn.style.display =
+            copyDiffBtn.style.display === "none" ? "" : "none";
+        if (toggleBtn.textContent === "Hide") toggleBtn.textContent = "Show";
+        else toggleBtn.textContent = "Hide";
+        updateDiffOverflowWarning();
+      });
+    document.getElementById("diff-section").style.display = "";
+
+    {# The code below is temporarily disabled since after retiring run["args"]["official_master_sha"] #}
+    {# the fetchDiffTwoDots should be replaced by a 3-dot comparison. #}
+    {% if False and run["args"]["base_tag"] == "master" %}
+      if (baseOfficialMaster) {
+        // Check if the diff is already in localStorage and use it if it is
+        let run = localStorageDiffs.find(diff => diff["id"] === "{{ run_id }}" && diff["masterVsBase"] === true);
+        let text = run?.text;
+
+        if (!text) {
+          const masterVsOfficialMaster =
+            await fetchDiffTwoDots(apiUrlBase, apiOfficialMaster, diffBase, baseOfficialMaster, options);
+          text = masterVsOfficialMaster.text || "No diff available";
+          // Try to save the diff in localStorage
+          // It can throw an exception if there is not enough space
+          try {
+            localStorageDiffs.push({id:"{{ run_id }}", text: text, lines: count, masterVsBase: true, timeStamp: currentTime});
+            localStorage.setItem("localStorageDiffs", JSON.stringify(localStorageDiffs));
+          } catch (e) {
+            console.warn("Could not save diff in localStorage");
+          }
+        }
+
+        if (text === "No diff available") {
+          return;
+        }
+
+        document.getElementById("master_vs_official_master").style.display = "";
+        document.getElementById("master_vs_official_master").addEventListener("click", (e) => {
+          // Check if the diff is already in localStorage and use it if it is
+          let localStorageDiffs = JSON.parse(localStorage.getItem("localStorageDiffs")) || [];
+          localStorageDiffs = localStorageDiffs.filter(diff => diff?.timeStamp >= oneDayAgo);
+          e.currentTarget.classList.toggle("active");
+          if (e.currentTarget.classList.contains("active")) {
+              e.currentTarget.querySelector("span").textContent = "base vs master";
+              e.currentTarget.title = "Compares base to master";
+              addDiff(diffText, text);
+              hljs.highlightElement(diffText);
+          }
+          else {
+            e.currentTarget.querySelector("span").textContent = "master vs official";
+            e.currentTarget.title = "Compares master to official-master at the time of submission";
+            // Check if the diff is already in localStorage and use it if it is
+            let run = localStorageDiffs.find(diff => diff["id"] === "{{ run_id }}" && diff["masterVsBase"] === false);
+            const originalDiffText = run.text;
+            const originalDiffCount = run.lines || 0;
+            addDiff(diffText, originalDiffText);
+            showDiff(diffContents, diffText, originalDiffCount, copyDiffBtn, toggleBtn);
+            hljs.highlightElement(diffText);
+          }
+        });
+      }
+    {% endif %}
+  }
+
+  const diffPromise = handleDiff();
+
+  const nextFrame = () => new Promise((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
+
+  Promise.all([spsaPromise, diffPromise, tasksPromise])
+    .then(async () => {
+    {% if show_task >= 0 %}
+      await nextFrame();
+      scroll_to({{ show_task }});
+      document.getElementById("enclosure").style="visibility:visible;";
+      document.documentElement.style="overflow:scroll;";
+    {% endif %}
+    });
+</script>
+{% endblock %}

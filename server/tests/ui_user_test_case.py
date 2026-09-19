@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 
 import test_support
 
-from fishtest.run_cache import Prio
+from defencetest.run_cache import Prio
 
 
 class UiUserTestCase(unittest.TestCase):
@@ -14,7 +14,7 @@ class UiUserTestCase(unittest.TestCase):
     password = "test-ui-password"
     signup_username = None
     signup_password = "CorrectHorseBatteryStaple123!"
-    tests_repo = "https://github.com/official-stockfish/Stockfish"
+    tests_repo = "https://github.com/Owen-Foundation/Owen"
 
     @classmethod
     def setUpClass(cls):

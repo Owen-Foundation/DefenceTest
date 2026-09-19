@@ -55,7 +55,7 @@ class TestViewRouteMethods(unittest.TestCase):
         try:
             from fastapi.routing import APIRoute, iter_route_contexts
 
-            from fishtest.views import _VIEW_ROUTES
+            from defencetest.views import _VIEW_ROUTES
         except ModuleNotFoundError as exc:  # pragma: no cover
             raise unittest.SkipTest(
                 f"Server dependencies missing ({exc.name}); skipping FastAPI HTTP tests",

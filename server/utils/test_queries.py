@@ -8,9 +8,9 @@ import time
 
 from pymongo import DESCENDING, MongoClient
 
-from fishtest.rundb import RunDb
+from defencetest.rundb import RunDb
 
-db_name = "fishtest_new"
+db_name = "defencetest_new"
 rundb = RunDb()
 
 # MongoDB server is assumed to be on the same machine, if not user should use

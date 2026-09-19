@@ -1,11 +1,11 @@
-# Fishtest Server Documentation
+# DefenceTest Server Documentation
 
 ## Overview
 
-Fishtest is a distributed chess engine testing system. The server assigns
+DefenceTest is a distributed chess engine testing system. The server assigns
 testing tasks to volunteer workers, collects game results, and computes
 statistical analyses (SPRT, ELO) to determine whether code changes improve
-Stockfish. The web interface provides dashboards for managing test runs,
+Owen. The web interface provides dashboards for managing test runs,
 viewing results, and administering users and workers.
 
 ## Documents
@@ -29,7 +29,7 @@ viewing results, and administering users and workers.
 (cd server && uv sync && uv sync --group test)
 
 # Start the development server (from server/)
-(cd server && FISHTEST_INSECURE_DEV=1 uv run uvicorn fishtest.app:app --reload --port 8000)
+(cd server && DEFENCETEST_INSECURE_DEV=1 uv run uvicorn defencetest.app:app --reload --port 8000)
 ```
 
 For OpenAPI docs, worker setup, local validation workflows, and vtjson
@@ -53,7 +53,7 @@ validation rules, see
 
 ## Project layout
 ```
-fishtest/
+defencetest/
 |-- pyproject.toml             -- Root: dev tools (ruff, ty, pre-commit)
 |-- uv.lock                    -- Locked dependency set for the root project
 |-- .pre-commit-config.yaml    -- Pre-commit hooks (ruff, format, uv-lock)
@@ -61,7 +61,7 @@ fishtest/
 |-- docs/                      -- Architecture and reference documentation
 |-- server/
 |   |-- pyproject.toml         -- Server package: runtime + test dependencies
-|   |-- fishtest/              -- FastAPI application (Python >= 3.14)
+|   |-- defencetest/              -- FastAPI application (Python >= 3.14)
 |   |-- tests/                 -- Focused unit and HTTP contract tests
 |   `-- utils/                 -- Operational utilities (backup, migration, analysis)
 `-- worker/

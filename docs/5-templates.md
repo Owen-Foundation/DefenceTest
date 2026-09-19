@@ -4,7 +4,7 @@
 
 | Setting | Value |
 |---------|-------|
-| Templates directory | `server/fishtest/templates/` |
+| Templates directory | `server/defencetest/templates/` |
 | File extension | `.html.j2` |
 | Autoescape | Enabled for HTML, XML, and `.j2` files |
 | Undefined behavior | `StrictUndefined` (missing variables raise errors) |
@@ -48,7 +48,7 @@ and `http/jinja.py`.
 | `poll` | `http/jinja.py` | Shared htmx polling intervals exposed to templates |
 | `htmx` | `http/jinja.py` | Shared htmx timing defaults exposed to templates |
 | `cookies` | `http/jinja.py` | Shared cookie max-age values for page scripts/templates |
-| `fishtest` | `fishtest` package | Package module (version, metadata) |
+| `defencetest` | `defencetest` package | Package module (version, metadata) |
 | `gh` | `github_api.py` | GitHub API module (commit_url, etc.) |
 | `math`, `datetime`, `copy`, `urllib`, `float` | Python stdlib | Standard library access |
 
@@ -1134,7 +1134,7 @@ link back to its normal color.
 | `show_gauge` | bool |
 
 The `row` payload is shaped by `build_run_table_rows()` in
-`server/fishtest/http/template_helpers.py`. Its `diff_url` field is derived
+`server/defencetest/http/template_helpers.py`. Its `diff_url` field is derived
 from the canonical run diff URL builder.
 
 ### `tasks_content_fragment.html.j2`

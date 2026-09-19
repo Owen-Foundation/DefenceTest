@@ -63,9 +63,9 @@ from games import (
 )
 from updater import update
 
-LOCK_FILE = Path(__file__).resolve().parent / "fishtest_worker.lock"
+LOCK_FILE = Path(__file__).resolve().parent / "defencetest_worker.lock"
 
-# Minimum requirement of compiler version for Stockfish.
+# Minimum requirement of compiler version for Owen.
 MIN_GCC_MAJOR = 9
 MIN_GCC_MINOR = 3
 
@@ -91,15 +91,16 @@ IS_COLAB = (
     and importlib.util.find_spec("google.colab") is not None
 )
 
-CONFIGFILE = "fishtest.cfg"
+CONFIGFILE = "defencetest.cfg"
 
 LOGO = r"""
-______ _     _     _            _                        _
-|  ___(_)   | |   | |          | |                      | |
-| |_   _ ___| |__ | |_ ___  ___| |_  __      _____  _ __| | _____ _ __
-|  _| | / __| '_ \| __/ _ \/ __| __| \ \ /\ / / _ \| '__| |/ / _ \ '__|
-| |   | \__ \ | | | ||  __/\__ \ |_   \ V  V / (_) | |  |   <  __/ |
-\_|   |_|___/_| |_|\__\___||___/\__|   \_/\_/ \___/|_|  |_|\_\___|_|
+ ____             __                   _____         _
+|  _ \  ___  ___ / _| ___ _ __   ___  |_   _|__  ___| |_
+| | | |/ _ \/ _ \ |_ / _ \ '_ \ / _ \   | |/ _ \/ __| __|
+| |_| |  __/  __/  _|  __/ | | |  __/   | |  __/\__ \ |_
+|____/ \___|\___|_|  \___|_| |_|\___|   |_|\___||___/\__|
+
+           distributed testing for the Owen chess engine
 """
 
 """
@@ -118,31 +119,31 @@ games.py  :             parse_fastchess_output()
 Apis used by the worker
 =======================
 
-<fishtest>     = https://tests.stockfishchess.org
+<defencetest>     = https://<your-defencetest-host>   (set via --host or DEFENCETEST_HOST)
 <github>       = https://api.github.com
-<github-books> = <github>/repos/official-stockfish/books
+<github-books> = <github>/repos/Owen-Foundation/books
 
-Heartbeat           <fishtest>/api/beat                                         POST
+Heartbeat           <defencetest>/api/beat                                         POST
 
 Setup task          <github>/rate_limit                                         GET
-                    <fishtest>/api/request_version                              POST
-                    <fishtest>/api/request_task                                 POST
-                    <fishtest>/api/nn/<nnue>                                    GET
+                    <defencetest>/api/request_version                              POST
+                    <defencetest>/api/request_task                                 POST
+                    <defencetest>/api/nn/<nnue>                                    GET
                     <github-books>/git/trees/master                             GET
                     <github-books>/git/trees/master/blobs/<sha-book>            GET
                     <github>/repos/Disservin/fastchess/zipball/<sha>            GET
                     <github>/repos/<user-repo>/zipball/<sha>                    GET
 
-Main loop           <fishtest>/api/update_task                                  POST
-                    <fishtest>/api/request_spsa                                 POST
+Main loop           <defencetest>/api/update_task                                  POST
+                    <defencetest>/api/request_spsa                                 POST
 
-Finish task         <fishtest>/api/failed_task                                  POST
-                    <fishtest>/api/stop_run                                     POST
-                    <fishtest>/api/upload_pgn                                   POST
+Finish task         <defencetest>/api/failed_task                                  POST
+                    <defencetest>/api/stop_run                                     POST
+                    <defencetest>/api/upload_pgn                                   POST
 
 
 The POST requests are json encoded. For the shape of a valid request, consult
-"api.py" in the Fishtest source.
+"api.py" in the DefenceTest source.
 
 The POST requests return a json encoded dictionary. It may contain a key "error".
 In that case the corresponding value is an error message.
@@ -287,7 +288,7 @@ def verify_sri(install_dir):
 
 def download_sri():
     try:
-        return json.loads(download_from_github("worker/sri.txt", repo="fishtest"))
+        return json.loads(download_from_github("worker/sri.txt", repo="DefenceTest"))
     except Exception:
         return None
 
@@ -629,7 +630,7 @@ def setup_parameters(worker_dir):
         ("login", "username", "", str, None),
         ("login", "password", "", str, None),
         ("parameters", "protocol", "https", ["http", "https"], None),
-        ("parameters", "host", "tests.stockfishchess.org", str, None),
+        ("parameters", "host", os.environ.get("DEFENCETEST_HOST", "localhost"), str, None),
         ("parameters", "port", "443", int, None),
         (
             "parameters",
@@ -680,7 +681,7 @@ def setup_parameters(worker_dir):
         "--host",
         dest="host",
         default=config.get("parameters", "host"),
-        help="the hostname of the fishtest server",
+        help="the hostname of the defencetest server",
     )
     parser.add_argument(
         "-p",
@@ -688,7 +689,7 @@ def setup_parameters(worker_dir):
         dest="port",
         default=config.getint("parameters", "port"),
         type=int,
-        help="the port of the fishtest server",
+        help="the port of the defencetest server",
     )
     parser.add_argument(
         "-c",
@@ -1174,8 +1175,8 @@ def get_worker_arch(worker_dir):
     try:
         blob = download_from_github(
             item="scripts/get_native_properties.sh",
-            owner="official-stockfish",
-            repo="Stockfish",
+            owner="Owen-Foundation",
+            repo="Owen",
             branch="master",
         )
         with open("get_native_properties.sh", "w") as f:

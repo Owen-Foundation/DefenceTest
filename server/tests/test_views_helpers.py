@@ -7,8 +7,8 @@ detection, username matching, and heap-based merge behavior.
 import unittest
 from datetime import UTC, datetime
 
-from fishtest.util import tests_repo
-from fishtest.views_helpers import (
+from defencetest.util import tests_repo
+from defencetest.views_helpers import (
     _build_query_string,
     _clamp_page_index,
     _float_param,
@@ -279,12 +279,12 @@ class IsHxRequestTests(unittest.TestCase):
 class TestsRepoHelperTests(unittest.TestCase):
     def test_tests_repo_returns_canonical_url_for_trailing_slash(self):
         run = {
-            "args": {"tests_repo": "https://github.com/official-stockfish/Stockfish/"}
+            "args": {"tests_repo": "https://github.com/Owen-Foundation/Owen/"}
         }
 
         self.assertEqual(
             tests_repo(run),
-            "https://github.com/official-stockfish/Stockfish",
+            "https://github.com/Owen-Foundation/Owen",
         )
 
     def test_tests_repo_falls_back_for_empty_legacy_value(self):
@@ -292,7 +292,7 @@ class TestsRepoHelperTests(unittest.TestCase):
 
         self.assertEqual(
             tests_repo(run),
-            "https://github.com/official-stockfish/Stockfish",
+            "https://github.com/Owen-Foundation/Owen",
         )
 
 

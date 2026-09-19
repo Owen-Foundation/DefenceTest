@@ -18,7 +18,7 @@ venv/
 .vscode/
 worker/api.log*
 worker/fish.exit
-worker/fishtest.cfg
+worker/defencetest.cfg
 worker/_testing_*/
 worker/testing/
 worker/*worker.lock

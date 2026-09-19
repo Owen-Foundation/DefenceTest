@@ -14,12 +14,12 @@ import test_support
 from fastapi import Depends, Request
 from starlette.responses import Response
 
-from fishtest.http.settings import (
+from defencetest.http.settings import (
     FINISHED_FILTER_MAX_COUNT_ANON,
     FINISHED_FILTER_MAX_COUNT_AUTH,
     HTMX_INPUT_CHANGED_DELAY_MS,
 )
-from fishtest.run_cache import Prio
+from defencetest.run_cache import Prio
 
 
 class TestHttpBoundary(unittest.TestCase):
@@ -50,11 +50,11 @@ class TestHttpBoundary(unittest.TestCase):
     def _set_authenticated_session_cookie(self, client, *, username: str) -> None:
         from itsdangerous import TimestampSigner
 
-        from fishtest.http.cookie_session import (
+        from defencetest.http.cookie_session import (
             SESSION_COOKIE_NAME,
             session_secret_key,
         )
-        from fishtest.http.session_middleware import _encode_cookie_value
+        from defencetest.http.session_middleware import _encode_cookie_value
 
         payload: dict[str, object] = {"user": username}
         signer = TimestampSigner(session_secret_key())
@@ -82,7 +82,7 @@ class TestHttpBoundary(unittest.TestCase):
             new_signature="654321",
             base_nets=["nn-0000000000a0.nnue"],
             new_nets=["nn-0000000000a1.nnue"],
-            tests_repo="https://github.com/official-stockfish/Stockfish",
+            tests_repo="https://github.com/Owen-Foundation/Owen",
             auto_purge=False,
             username="TestBoundaryRunUser",
             start_time=datetime.now(UTC),
@@ -145,7 +145,7 @@ class TestHttpBoundary(unittest.TestCase):
             new_signature="654321",
             base_nets=["nn-0000000000a0.nnue"],
             new_nets=["nn-0000000000a1.nnue"],
-            tests_repo="https://github.com/official-stockfish/Stockfish",
+            tests_repo="https://github.com/Owen-Foundation/Owen",
             auto_purge=False,
             username=username,
             start_time=datetime.now(UTC),
@@ -159,9 +159,9 @@ class TestHttpBoundary(unittest.TestCase):
         return str(run_id)
 
     def test_request_shim_parity(self):
-        from fishtest.http.boundary import ApiRequestShim
-        from fishtest.http.cookie_session import CookieSession
-        from fishtest.views import _RequestShim
+        from defencetest.http.boundary import ApiRequestShim
+        from defencetest.http.cookie_session import CookieSession
+        from defencetest.views import _RequestShim
 
         app = self._build_app()
 
@@ -218,7 +218,7 @@ class TestHttpBoundary(unittest.TestCase):
         self.assertTrue(data["api"]["remote_addr"])
 
     def test_json_parsing_errors(self):
-        from fishtest.http.boundary import JsonBodyResult, get_json_body
+        from defencetest.http.boundary import JsonBodyResult, get_json_body
 
         app = self._build_app()
 
@@ -242,7 +242,7 @@ class TestHttpBoundary(unittest.TestCase):
         self.assertIsNone(body["body"])
 
     def test_dispatch_view_204_has_no_body(self):
-        from fishtest.views import _dispatch_view
+        from defencetest.views import _dispatch_view
 
         app = self._build_app()
 
@@ -265,7 +265,7 @@ class TestHttpBoundary(unittest.TestCase):
         self.assertEqual(response.content, b"")
 
     def test_dispatch_view_get_sets_vary_hx_request(self):
-        from fishtest.views import _dispatch_view
+        from defencetest.views import _dispatch_view
 
         app = self._build_app()
 
@@ -287,7 +287,7 @@ class TestHttpBoundary(unittest.TestCase):
         self.assertIn("HX-Request", response.headers.get("vary", ""))
 
     def test_dispatch_view_direct_response_sets_vary_hx_request(self):
-        from fishtest.views import _dispatch_view
+        from defencetest.views import _dispatch_view
 
         app = self._build_app()
 
@@ -310,7 +310,7 @@ class TestHttpBoundary(unittest.TestCase):
         self.assertIn("HX-Request", response.headers.get("vary", ""))
 
     def test_is_hx_request_ignores_navigate_mode(self):
-        from fishtest.views import _is_hx_request
+        from defencetest.views import _is_hx_request
 
         req_htmx = SimpleNamespace(headers={"HX-Request": "true"})
         req_navigate = SimpleNamespace(
@@ -321,7 +321,7 @@ class TestHttpBoundary(unittest.TestCase):
         self.assertFalse(_is_hx_request(req_navigate))
 
     def test_template_post_forms_include_explicit_csrf_token(self):
-        templates_dir = Path(__file__).resolve().parents[1] / "fishtest" / "templates"
+        templates_dir = Path(__file__).resolve().parents[1] / "defencetest" / "templates"
         form_re = re.compile(
             r"<form[^>]*method\s*=\s*['\"]?post['\"]?[^>]*>(.*?)</form>",
             flags=re.IGNORECASE | re.DOTALL,
@@ -342,7 +342,7 @@ class TestHttpBoundary(unittest.TestCase):
         )
 
     def test_tests_run_test_type_toggle_is_not_nested_in_label(self):
-        templates_dir = Path(__file__).resolve().parents[1] / "fishtest" / "templates"
+        templates_dir = Path(__file__).resolve().parents[1] / "defencetest" / "templates"
         template_path = templates_dir / "tests_run.html.j2"
         text = template_path.read_text(encoding="utf-8")
 
@@ -715,7 +715,7 @@ class TestHttpBoundary(unittest.TestCase):
             self.rundb.userdb.clear_cache()
 
     def test_tests_user_live_run_tables_queries_finished_runs_once(self):
-        import fishtest.views as views_module
+        import defencetest.views as views_module
 
         app = self._build_app(include_views=True)
         client = self.TestClient(app)
@@ -748,7 +748,7 @@ class TestHttpBoundary(unittest.TestCase):
             self.rundb.userdb.clear_cache()
 
     def test_tests_user_live_run_tables_prefers_route_username(self):
-        import fishtest.views as views_module
+        import defencetest.views as views_module
 
         app = self._build_app(include_views=True)
         client = self.TestClient(app)
@@ -831,9 +831,9 @@ class TestHttpBoundary(unittest.TestCase):
         self.assertIn('hx-swap-oob="innerHTML"', response.text)
 
     def test_template_context_includes_helpers(self):
-        from fishtest.http import jinja
-        from fishtest.http.boundary import build_template_context
-        from fishtest.http.cookie_session import CookieSession
+        from defencetest.http import jinja
+        from defencetest.http.boundary import build_template_context
+        from defencetest.http.cookie_session import CookieSession
 
         app = self._build_app()
 
@@ -860,7 +860,7 @@ class TestHttpBoundary(unittest.TestCase):
                 "csrf": context["csrf_token"],
                 "user": username,
                 "flash": typed_flash,
-                "static_url": typed_static_url("fishtest:static/css/site.css"),
+                "static_url": typed_static_url("defencetest:static/css/site.css"),
             }
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -888,8 +888,8 @@ class TestHttpBoundary(unittest.TestCase):
         self.assertIn("?x=", data["static_url"])
 
     def test_session_remember_commit_cookie(self):
-        from fishtest.http.boundary import commit_session_response, remember
-        from fishtest.http.cookie_session import load_session
+        from defencetest.http.boundary import commit_session_response, remember
+        from defencetest.http.cookie_session import load_session
 
         app = self._build_app()
 
@@ -906,13 +906,13 @@ class TestHttpBoundary(unittest.TestCase):
         response = client.get("/remember")
         self.assertEqual(response.status_code, 200)
         cookie = response.headers.get("set-cookie", "")
-        self.assertIn("fishtest_session=", cookie)
+        self.assertIn("defencetest_session=", cookie)
         self.assertIn("Max-Age=60", cookie)
         self.assertIn("Expires=", cookie)
 
     def test_session_forget_commit_cookie(self):
-        from fishtest.http.boundary import commit_session_response, forget
-        from fishtest.http.cookie_session import load_session
+        from defencetest.http.boundary import commit_session_response, forget
+        from defencetest.http.cookie_session import load_session
 
         app = self._build_app()
 
@@ -930,14 +930,14 @@ class TestHttpBoundary(unittest.TestCase):
         response = client.get("/forget")
         self.assertEqual(response.status_code, 200)
         cookie = response.headers.get("set-cookie", "")
-        self.assertIn("fishtest_session=", cookie)
+        self.assertIn("defencetest_session=", cookie)
         cookie_lower = cookie.lower()
         self.assertIn("max-age=0", cookie_lower)
         self.assertIn("expires=", cookie_lower)
 
     def test_session_remember_max_age_persists_across_requests(self):
-        from fishtest.http.boundary import commit_session_response, remember
-        from fishtest.http.cookie_session import load_session
+        from defencetest.http.boundary import commit_session_response, remember
+        from defencetest.http.cookie_session import load_session
 
         app = self._build_app()
 
@@ -959,18 +959,18 @@ class TestHttpBoundary(unittest.TestCase):
         remember_response = client.get("/remember-persist")
         self.assertEqual(remember_response.status_code, 200)
         remember_cookie = remember_response.headers.get("set-cookie", "")
-        self.assertIn("fishtest_session=", remember_cookie)
+        self.assertIn("defencetest_session=", remember_cookie)
         self.assertIn("Max-Age=60", remember_cookie)
 
         touch_response = client.get("/touch")
         self.assertEqual(touch_response.status_code, 200)
         touch_cookie = touch_response.headers.get("set-cookie", "")
-        self.assertIn("fishtest_session=", touch_cookie)
+        self.assertIn("defencetest_session=", touch_cookie)
         self.assertIn("Max-Age=60", touch_cookie)
 
     def test_session_non_remember_cookie_stays_session_scoped(self):
-        from fishtest.http.boundary import commit_session_response, remember
-        from fishtest.http.cookie_session import load_session
+        from defencetest.http.boundary import commit_session_response, remember
+        from defencetest.http.cookie_session import load_session
 
         app = self._build_app()
 
@@ -992,13 +992,13 @@ class TestHttpBoundary(unittest.TestCase):
         remember_response = client.get("/remember-session")
         self.assertEqual(remember_response.status_code, 200)
         remember_cookie = remember_response.headers.get("set-cookie", "")
-        self.assertIn("fishtest_session=", remember_cookie)
+        self.assertIn("defencetest_session=", remember_cookie)
         self.assertNotIn("Max-Age=", remember_cookie)
 
         touch_response = client.get("/touch")
         self.assertEqual(touch_response.status_code, 200)
         touch_cookie = touch_response.headers.get("set-cookie", "")
-        self.assertIn("fishtest_session=", touch_cookie)
+        self.assertIn("defencetest_session=", touch_cookie)
         self.assertNotIn("Max-Age=", touch_cookie)
 
     def test_session_cookie_not_set_when_session_untouched(self):
@@ -1014,8 +1014,8 @@ class TestHttpBoundary(unittest.TestCase):
         self.assertIsNone(response.headers.get("set-cookie"))
 
     def test_session_remember_then_non_remember_drops_max_age(self):
-        from fishtest.http.boundary import commit_session_response, remember
-        from fishtest.http.cookie_session import load_session
+        from defencetest.http.boundary import commit_session_response, remember
+        from defencetest.http.cookie_session import load_session
 
         app = self._build_app()
 
@@ -1046,12 +1046,12 @@ class TestHttpBoundary(unittest.TestCase):
         session_response = client.get("/login-session")
         self.assertEqual(session_response.status_code, 200)
         session_cookie = session_response.headers.get("set-cookie", "")
-        self.assertIn("fishtest_session=", session_cookie)
+        self.assertIn("defencetest_session=", session_cookie)
         self.assertNotIn("Max-Age=", session_cookie)
 
     def test_session_remember_marks_secure_for_https(self):
-        from fishtest.http.boundary import commit_session_response, remember
-        from fishtest.http.cookie_session import load_session
+        from defencetest.http.boundary import commit_session_response, remember
+        from defencetest.http.cookie_session import load_session
 
         app = self._build_app()
 
@@ -1072,8 +1072,8 @@ class TestHttpBoundary(unittest.TestCase):
         self.assertIn("secure", attrs)
 
     def test_session_remember_max_age_survives_size_limit_shrink(self):
-        from fishtest.http.boundary import commit_session_response, remember
-        from fishtest.http.cookie_session import load_session
+        from defencetest.http.boundary import commit_session_response, remember
+        from defencetest.http.cookie_session import load_session
 
         app = self._build_app()
 
@@ -1111,7 +1111,7 @@ class TestHttpBoundary(unittest.TestCase):
         self.assertEqual(inspect_body["remember_max_age"], 60)
 
     def test_session_invalid_remember_marker_is_ignored(self):
-        from fishtest.http.cookie_session import load_session
+        from defencetest.http.cookie_session import load_session
 
         app = self._build_app()
 
@@ -1126,12 +1126,12 @@ class TestHttpBoundary(unittest.TestCase):
         response = client.get("/invalid-marker")
         self.assertEqual(response.status_code, 200)
         cookie = response.headers.get("set-cookie", "")
-        self.assertIn("fishtest_session=", cookie)
+        self.assertIn("defencetest_session=", cookie)
         self.assertNotIn("Max-Age=", cookie)
 
     def test_session_remember_zero_max_age_is_emitted(self):
-        from fishtest.http.boundary import commit_session_response, remember
-        from fishtest.http.cookie_session import load_session
+        from defencetest.http.boundary import commit_session_response, remember
+        from defencetest.http.cookie_session import load_session
 
         app = self._build_app()
 
@@ -1152,8 +1152,8 @@ class TestHttpBoundary(unittest.TestCase):
         self.assertIn("Expires=", cookie)
 
     def test_session_forget_flags_force_cookie_clear(self):
-        from fishtest.http.boundary import SessionCommitFlags, commit_session_flags
-        from fishtest.http.cookie_session import load_session
+        from defencetest.http.boundary import SessionCommitFlags, commit_session_flags
+        from defencetest.http.cookie_session import load_session
 
         app = self._build_app()
 
@@ -1174,11 +1174,11 @@ class TestHttpBoundary(unittest.TestCase):
         response = client.get("/forget-flags")
         self.assertEqual(response.status_code, 200)
         cookie = response.headers.get("set-cookie", "").lower()
-        self.assertIn("fishtest_session=null", cookie)
+        self.assertIn("defencetest_session=null", cookie)
 
     def test_template_context_pending_users_count(self):
-        from fishtest.http.boundary import build_template_context
-        from fishtest.http.cookie_session import CookieSession
+        from defencetest.http.boundary import build_template_context
+        from defencetest.http.cookie_session import CookieSession
 
         username = "httpboundarypending"
         self.rundb.userdb.users.delete_many({"username": username})
@@ -1219,7 +1219,7 @@ class TestHttpBoundary(unittest.TestCase):
 
     def test_sortable_tables_have_scope_col_on_th(self):
         """Every sort_header macro must emit <th scope="col" ...>."""
-        templates_dir = Path(__file__).resolve().parents[1] / "fishtest" / "templates"
+        templates_dir = Path(__file__).resolve().parents[1] / "defencetest" / "templates"
 
         sortable_templates = [
             "contributors_content_fragment.html.j2",
@@ -1252,7 +1252,7 @@ class TestHttpBoundary(unittest.TestCase):
 
     def test_sortable_tables_have_visually_hidden_caption(self):
         """Every sortable table must have <caption class="visually-hidden">."""
-        templates_dir = Path(__file__).resolve().parents[1] / "fishtest" / "templates"
+        templates_dir = Path(__file__).resolve().parents[1] / "defencetest" / "templates"
 
         sortable_table_ids = {
             "contributors_content_fragment.html.j2": "contributors_table",
@@ -1285,7 +1285,7 @@ class TestHttpBoundary(unittest.TestCase):
 
     def test_sortable_tables_have_sticky_top_on_thead(self):
         """Every sortable table <thead> must have class="sticky-top"."""
-        templates_dir = Path(__file__).resolve().parents[1] / "fishtest" / "templates"
+        templates_dir = Path(__file__).resolve().parents[1] / "defencetest" / "templates"
 
         sortable_table_ids = {
             "contributors_content_fragment.html.j2": "contributors_table",

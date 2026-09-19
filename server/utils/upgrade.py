@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 import pymongo
 
-from fishtest.util import worker_name
+from defencetest.util import worker_name
 
 
 def show(p):
@@ -102,7 +102,7 @@ def convert_run(run):
 
 if __name__ == "__main__":
     client = pymongo.MongoClient()
-    runs_collection = client["fishtest_new"]["runs"]
+    runs_collection = client["defencetest_new"]["runs"]
     runs = runs_collection.find({}).sort("_id", 1)
     count = 0
     print("Starting conversion...")

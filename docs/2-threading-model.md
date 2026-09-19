@@ -84,7 +84,7 @@ Async generators that yield chunks, with each chunk read in the threadpool.
 
 | Class | Domain | Notes |
 |-------|--------|-------|
-| `FishtestSessionMiddleware` | `[LOOP]` | Signs/unsigns cookie, enforces size limits |
+| `DefenceTestSessionMiddleware` | `[LOOP]` | Signs/unsigns cookie, enforces size limits |
 | `ShutdownGuardMiddleware` | `[LOOP]` | Checks `_shutdown` flag, returns 503 |
 | `AttachRequestStateMiddleware` | `[LOOP]` | Copies state references, stamps start time |
 | `RejectNonPrimaryWorkerApiMiddleware` | `[LOOP]` | Checks primary flag, returns 503 |
@@ -256,6 +256,6 @@ for beat/update_task.
 ### Where the constants live
 
 Both `THREADPOOL_TOKENS` and `TASK_SEMAPHORE_SIZE` are defined in
-`fishtest/http/settings.py` -- a dependency-free module that neither
+`defencetest/http/settings.py` -- a dependency-free module that neither
 `app.py` nor `rundb.py` imports from each other, avoiding circular
 imports.

@@ -11,12 +11,12 @@ from datetime import UTC, datetime
 
 import test_support
 
-from fishtest.run_cache import Prio
+from defencetest.run_cache import Prio
 
 try:
-    from fishtest.api import WORKER_VERSION
-    from fishtest.schemas import ACTION_MESSAGE_SIZE
-    from fishtest.util import worker_name
+    from defencetest.api import WORKER_VERSION
+    from defencetest.schemas import ACTION_MESSAGE_SIZE
+    from defencetest.util import worker_name
 except ModuleNotFoundError:  # pragma: no cover
     WORKER_VERSION = None  # type: ignore[assignment]
     ACTION_MESSAGE_SIZE = None  # type: ignore[assignment]
@@ -31,7 +31,7 @@ class TestHttpApi(unittest.TestCase):
 
         if WORKER_VERSION is None:  # pragma: no cover
             raise unittest.SkipTest(
-                "Server HTTP dependencies missing (fishtest.api); skipping FastAPI HTTP tests",
+                "Server HTTP dependencies missing (defencetest.api); skipping FastAPI HTTP tests",
             )
 
         cls.rundb = test_support.get_rundb()
@@ -45,7 +45,7 @@ class TestHttpApi(unittest.TestCase):
             cls.username,
             cls.password,
             "test-worker@example.com",
-            "https://github.com/official-stockfish/Stockfish",
+            "https://github.com/Owen-Foundation/Owen",
         )
         user = cls.rundb.userdb.get_user(cls.username)
         user["pending"] = False
@@ -153,7 +153,7 @@ class TestHttpApi(unittest.TestCase):
             base_nets=["nn-0000000000a0.nnue"],
             new_nets=["nn-0000000000a0.nnue"],
             rescheduled_from="653db116cc309ae839563103",
-            tests_repo="https://github.com/official-stockfish/Stockfish",
+            tests_repo="https://github.com/Owen-Foundation/Owen",
             auto_purge=False,
             username=self.username,
             start_time=datetime.now(UTC),

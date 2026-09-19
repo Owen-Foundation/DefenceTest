@@ -6,11 +6,11 @@ from typing import Any, cast
 
 from fastapi.responses import RedirectResponse
 
-from fishtest.http.settings import (
+from defencetest.http.settings import (
     FINISHED_FILTER_MAX_COUNT_ANON,
     FINISHED_FILTER_MAX_COUNT_AUTH,
 )
-from fishtest.views import get_paginated_finished_runs
+from defencetest.views import get_paginated_finished_runs
 
 
 class _CachedUsernamesStub:

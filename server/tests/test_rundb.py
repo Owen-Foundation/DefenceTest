@@ -9,9 +9,9 @@ import test_support
 from bson.objectid import ObjectId
 from pymongo import DESCENDING
 
-from fishtest.api import WORKER_VERSION
-from fishtest.run_cache import Prio
-from fishtest.spsa_handler import _pack_flips, _unpack_flips
+from defencetest.api import WORKER_VERSION
+from defencetest.run_cache import Prio
+from defencetest.spsa_handler import _pack_flips, _unpack_flips
 
 
 class CreateRunDBTest(unittest.TestCase):
@@ -88,7 +88,7 @@ class CreateRunDBTest(unittest.TestCase):
         *,
         tc: str = "10+0.01",
         finished: bool = False,
-        tests_repo: str = "https://github.com/15408be06cfa0ff6/Stockfish",
+        tests_repo: str = "https://github.com/15408be06cfa0ff6/Owen",
         master_repo: str | None = None,
     ) -> str:
         num_tasks = 4
@@ -243,7 +243,7 @@ class CreateRunDBTest(unittest.TestCase):
             base_nets=["nn-0000000000a0.nnue"],
             new_nets=["nn-0000000000a0.nnue", "nn-0000000000a1.nnue"],
             rescheduled_from="653db116cc309ae839563103",
-            tests_repo="https://github.com/15408be06cfa0ff6/Stockfish",
+            tests_repo="https://github.com/15408be06cfa0ff6/Owen",
             auto_purge=False,
             username="OtherRunDbUser",
             start_time=datetime.now(UTC),
@@ -275,26 +275,26 @@ class CreateRunDBTest(unittest.TestCase):
 
     def test_14_new_run_canonicalizes_tests_repo(self):
         run_id = self._create_test_run(
-            tests_repo="https://github.com/15408be06cfa0ff6/Stockfish/",
+            tests_repo="https://github.com/15408be06cfa0ff6/Owen/",
         )
 
         run = self.rundb.get_run(run_id)
 
         self.assertEqual(
             run["args"]["tests_repo"],
-            "https://github.com/15408be06cfa0ff6/Stockfish",
+            "https://github.com/15408be06cfa0ff6/Owen",
         )
 
     def test_15_new_run_canonicalizes_master_repo(self):
         run_id = self._create_test_run(
-            master_repo="https://github.com/official-stockfish/Stockfish/",
+            master_repo="https://github.com/Owen-Foundation/Owen/",
         )
 
         run = self.rundb.get_run(run_id)
 
         self.assertEqual(
             run["args"]["master_repo"],
-            "https://github.com/official-stockfish/Stockfish",
+            "https://github.com/Owen-Foundation/Owen",
         )
 
     def test_20_update_task(self):

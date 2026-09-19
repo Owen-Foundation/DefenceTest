@@ -1,7 +1,7 @@
 # Developer references
 
 Curated web references and project-specific patterns for the four libraries
-that form the fishtest server stack. For server architecture and request
+that form the defencetest server stack. For server architecture and request
 flow, see [1-architecture.md](1-architecture.md). For the threading model
 and async/sync boundaries, see [2-threading-model.md](2-threading-model.md).
 
@@ -40,7 +40,7 @@ app.include_router(api_router)
 app.include_router(views_router)
 ```
 
-**No dependency injection**: fishtest does not use FastAPI's `Depends()` /
+**No dependency injection**: defencetest does not use FastAPI's `Depends()` /
 `Annotated` dependency system. Authentication, CSRF, and session access are
 enforced centrally -- in `_dispatch_view` for UI routes and per-handler in the
 API router -- not through injected dependencies.
@@ -62,11 +62,11 @@ async def lifespan(app: FastAPI):
 errors return JSON with `{"error": "...", "duration": N}`.
 
 **Sync handlers**: Sync view/API functions are automatically run via
-`run_in_threadpool` by Starlette/FastAPI. Most fishtest handlers use
+`run_in_threadpool` by Starlette/FastAPI. Most defencetest handlers use
 `async def` with explicit `run_in_threadpool` calls for blocking DB work.
 
 **Testing**: tests build the real application with its full middleware stack
-and exercise it against a dedicated `fishtest_tests` MongoDB. Because the app
+and exercise it against a dedicated `defencetest_tests` MongoDB. Because the app
 uses no FastAPI dependencies, there are no `app.dependency_overrides`.
 
 ## Starlette
@@ -87,9 +87,9 @@ uses no FastAPI dependencies, there are no `app.dependency_overrides`.
 
 ### Project patterns
 
-**Session middleware**: `FishtestSessionMiddleware` is a pure ASGI middleware
+**Session middleware**: `DefenceTestSessionMiddleware` is a pure ASGI middleware
 class; it does not subclass Starlette's `SessionMiddleware`. It signs and
-verifies the `fishtest_session` cookie directly with
+verifies the `defencetest_session` cookie directly with
 `itsdangerous.TimestampSigner`. Per-request cookie lifetime, the `Secure` flag,
 and forced expiry are driven through `scope["session_max_age"]`,
 `scope["session_secure"]`, and `scope["session_force_clear"]`. It follows the
@@ -115,9 +115,9 @@ Current middleware stack (all are pure ASGI):
     `HeadMethodMiddleware` -> `ShutdownGuardMiddleware` ->
     `AttachRequestStateMiddleware` ->
     `RejectNonPrimaryWorkerApiMiddleware` -> `RedirectBlockedUiUsersMiddleware` ->
-    `FishtestSessionMiddleware`
+    `DefenceTestSessionMiddleware`
 - Runtime order (outermost -> innermost):
-    `FishtestSessionMiddleware` -> `RedirectBlockedUiUsersMiddleware` ->
+    `DefenceTestSessionMiddleware` -> `RedirectBlockedUiUsersMiddleware` ->
     `RejectNonPrimaryWorkerApiMiddleware` -> `AttachRequestStateMiddleware` ->
     `ShutdownGuardMiddleware` -> `HeadMethodMiddleware`
 
@@ -190,11 +190,11 @@ async def page(request: Request):
 | Global | Source |
 |--------|--------|
 | `url_for` | Injected by Starlette |
-| `static_url` | `server/fishtest/http/jinja.py` |
-| `poll` | `server/fishtest/http/jinja.py` |
-| `htmx.input_changed_delay_ms` | `server/fishtest/http/jinja.py` |
-| Formatting helpers | `server/fishtest/http/template_helpers.py` |
-| `gh`, `fishtest` | registered in `server/fishtest/http/jinja.py` |
+| `static_url` | `server/defencetest/http/jinja.py` |
+| `poll` | `server/defencetest/http/jinja.py` |
+| `htmx.input_changed_delay_ms` | `server/defencetest/http/jinja.py` |
+| Formatting helpers | `server/defencetest/http/template_helpers.py` |
+| `gh`, `defencetest` | registered in `server/defencetest/http/jinja.py` |
 
 **Autoescaping**: Enabled for `.html`, `.xml`, `.j2` extensions. Raw HTML
 must use `{{ value|safe }}` or `{% autoescape false %}`.

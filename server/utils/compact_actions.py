@@ -2,10 +2,10 @@
 
 from pymongo import MongoClient
 
-from fishtest.actiondb import ActionDb
+from defencetest.actiondb import ActionDb
 
 conn = MongoClient()
-db = conn["fishtest_new"]
+db = conn["defencetest_new"]
 actiondb = ActionDb(db)
 
 

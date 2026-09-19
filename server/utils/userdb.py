@@ -1,8 +1,8 @@
 import atexit
 import re
 
-from fishtest.rundb import RunDb
-from fishtest.util import FISHTEST, VALID_USERNAME_PATTERN
+from defencetest.rundb import RunDb
+from defencetest.util import FISHTEST, VALID_USERNAME_PATTERN
 
 
 def get_rundb():

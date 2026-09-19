@@ -4,7 +4,7 @@ import json
 import unittest
 from math import isfinite
 
-from fishtest.spsa_workflow import (
+from defencetest.spsa_workflow import (
     CLASSIC_SPSA_ALGORITHM,
     apply_spsa_result_updates,
     build_spsa_chart_payload,

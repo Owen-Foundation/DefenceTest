@@ -1,10 +1,10 @@
 # Server Architecture
 
-## What fishtest does
+## What defencetest does
 
-Fishtest is a distributed chess engine testing infrastructure. The server:
+DefenceTest is a distributed chess engine testing infrastructure. The server:
 
-1. Accepts test submissions from developers (new Stockfish patches).
+1. Accepts test submissions from developers (new Owen patches).
 2. Assigns work units (tasks) to volunteer worker machines.
 3. Collects game results and computes statistical tests (SPRT, ELO).
 4. Publishes results through a web dashboard and a JSON API.
@@ -17,7 +17,7 @@ accounts, action logs, and neural network metadata are stored there.
 ```
 server/
 |-- pyproject.toml           -- Package metadata, dependencies
-|-- fishtest/
+|-- defencetest/
 |   |-- app.py               -- ASGI application factory, lifespan, middleware, routers
 |   |-- api.py               -- Worker API router (20 endpoints)
 |   |-- views.py             -- UI router (33 routes, data-driven dispatch,
@@ -61,7 +61,7 @@ worker lifecycle. `spsa_handler.py` stays attached to `RunDb` and owns the
 stateful worker request/update path, flip packing, buffering, and history
 timing.
 
-### HTTP support modules (`server/fishtest/http/`)
+### HTTP support modules (`server/defencetest/http/`)
 
 ```
 http/
@@ -74,7 +74,7 @@ http/
 |-- errors.py                -- Centralized error handler installation (API/UI routing)
 |-- jinja.py                 -- Jinja2 Environment, Jinja2Templates instance, static_url
 |-- middleware.py            -- Pure ASGI middleware (5 middleware classes)
-|-- session_middleware.py    -- FishtestSessionMiddleware (itsdangerous cookie signing)
+|-- session_middleware.py    -- DefenceTestSessionMiddleware (itsdangerous cookie signing)
 |-- settings.py              -- AppSettings (environment variable parsing)
 |-- template_helpers.py      -- Jinja2 filters and global functions
 |-- template_renderer.py     -- Template rendering helper (render_template_to_response)
@@ -82,7 +82,7 @@ http/
 `-- ui_pipeline.py           -- HTTP cache header application
 ```
 
-### Statistical modules (`server/fishtest/stats/`)
+### Statistical modules (`server/defencetest/stats/`)
 
 ```
 stats/
@@ -95,7 +95,7 @@ stats/
 
 ## Application startup
 
-The entrypoint is `uvicorn fishtest.app:app`. The `create_app()` function in
+The entrypoint is `uvicorn defencetest.app:app`. The `create_app()` function in
 `app.py` builds the FastAPI instance with a lifespan context manager that
 handles startup and shutdown. OpenAPI docs (`/docs`, `/redoc`) are disabled
 in production (`openapi_url` defaults to `None`). Set
@@ -132,8 +132,8 @@ instead of queuing them, which triggers exponential backoff in workers
 
 ### Startup sequence
 
-1. `AppSettings.from_env()` reads environment variables (`FISHTEST_PORT`,
-   `FISHTEST_PRIMARY_PORT`).
+1. `AppSettings.from_env()` reads environment variables (`DEFENCETEST_PORT`,
+   `DEFENCETEST_PRIMARY_PORT`).
 2. On the primary instance, `_require_single_worker_on_primary()` enforces
    that `UVICORN_WORKERS` is 1 (prevents duplicated scheduler side effects).
 3. `RunDb(port, is_primary_instance)` is constructed in the threadpool. This
@@ -164,7 +164,7 @@ order (outermost first in the request path):
 
 | Order | Middleware | Responsibility |
 |-------|-----------|----------------|
-| 1 | `FishtestSessionMiddleware` | Reads/writes signed session cookie (itsdangerous) |
+| 1 | `DefenceTestSessionMiddleware` | Reads/writes signed session cookie (itsdangerous) |
 | 2 | `RedirectBlockedUiUsersMiddleware` | Redirects blocked users to `/tests` (302) |
 | 3 | `RejectNonPrimaryWorkerApiMiddleware` | Returns 503 for worker API on non-primary instances |
 | 4 | `AttachRequestStateMiddleware` | Copies `app.state` handles to `request.state`; stamps `request_started_at` |
@@ -288,7 +288,7 @@ returning to the tab produces an immediate refresh.
 ## Primary instance model
 
 Multiple Uvicorn instances run behind nginx (ports 8000-8003). Exactly one is
-designated the **primary** via the `FISHTEST_PRIMARY_PORT` environment variable.
+designated the **primary** via the `DEFENCETEST_PRIMARY_PORT` environment variable.
 
 ### Primary responsibilities
 
@@ -311,7 +311,7 @@ designated the **primary** via the `FISHTEST_PRIMARY_PORT` environment variable.
 | SIGINT / SIGTERM | Uvicorn initiates graceful shutdown -> lifespan cleanup runs |
 | SIGUSR1 | Dumps all thread stacks to stderr via `faulthandler.register()` |
 
-To trigger a thread dump on a systemd-managed instance, run `sudo systemctl kill -s SIGUSR1 fishtest@8000`.
+To trigger a thread dump on a systemd-managed instance, run `sudo systemctl kill -s SIGUSR1 defencetest@8000`.
 
 During shutdown, `ShutdownGuardMiddleware` rejects new requests with HTTP 503.
 
@@ -343,7 +343,7 @@ in:
 - Form input validation (username format, worker name format).
 
 When raw form input and persisted document data intentionally have different
-contracts, fishtest uses different vtjson schemas for those boundaries.
+contracts, defencetest uses different vtjson schemas for those boundaries.
 Raw-input schemas may be broader than the persisted-data schema, while the
 persisted schema describes the canonical stored form validated before MongoDB
 writes.

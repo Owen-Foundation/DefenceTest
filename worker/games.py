@@ -170,9 +170,9 @@ def trim_files(testing_dir, source_dir=None):
     backup_pattern = (
         # (pattern, num_backups, expiration_in_days, only_update)
         ("fastchess" + EXE_SUFFIX, 1, math.inf, False),
-        ("stockfish-*-old" + EXE_SUFFIX, 0, -1, True),
-        ("stockfish-*" + EXE_SUFFIX, 50, 30, False),
-        ("nn-*.nnue", 10, 30, False),
+        ("owen-*-old" + EXE_SUFFIX, 0, -1, True),
+        ("owen-*" + EXE_SUFFIX, 50, 30, False),
+        ("nn-*.o2nn", 10, 30, False),
         ("results-*.pgn", 10, 30, False),
         ("*.epd", 4, 365, False),
         ("*.pgn", 4, 365, False),
@@ -347,8 +347,8 @@ def github_api(repo):
 
 def required_nets(engine):
     nets = {}
-    pattern = re.compile(r"(EvalFile\w*)\s+.*\s+(nn-[a-f0-9]{12}.nnue)")
-    print(f"Obtaining EvalFile of {engine.name}...")
+    pattern = re.compile(r"(NNUEFile\w*)\s+.*\s+(nn-[a-f0-9]{12}.o2nn)")
+    print(f"Obtaining NNUEFile of {engine.name}...")
     try:
         with subprocess.Popen(
             [engine, "uci"],
@@ -376,11 +376,11 @@ def required_nets(engine):
 def required_nets_from_source():
     """Parse evaluate.h and ucioption.cpp to find default nets"""
     nets = []
-    pattern = re.compile("nn-[a-f0-9]{12}.nnue")
+    pattern = re.compile("nn-[a-f0-9]{12}.o2nn")
     # NNUE code after binary embedding (Aug 2020)
     with open("evaluate.h", "r") as srcfile:
         for line in srcfile:
-            if "EvalFileDefaultName" in line and "define" in line:
+            if "NNUEFileDefaultName" in line and "define" in line:
                 m = pattern.search(line)
                 if m:
                     nets.append(m.group(0))
@@ -390,7 +390,7 @@ def required_nets_from_source():
     # NNUE code before binary embedding (Aug 2020)
     with open("ucioption.cpp", "r") as srcfile:
         for line in srcfile:
-            if "EvalFile" in line and "Option" in line:
+            if "NNUEFile" in line and "Option" in line:
                 m = pattern.search(line)
                 if m:
                     nets.append(m.group(0))
@@ -459,23 +459,15 @@ def run_single_bench(engine, hash_size, threads, depth, timeout=600):
     bench_time, bench_nodes = None, None
     try:
         with subprocess.Popen(
-            [
-                engine,
-                "bench",
-                str(hash_size),
-                str(threads),
-                str(depth),
-                "default",
-                "depth",
-            ],
-            stderr=subprocess.PIPE,
-            stdout=subprocess.DEVNULL,
+            [engine, "bench", str(max(1, min(int(depth), 10)))],
+            stderr=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
             universal_newlines=True,
             bufsize=1,
             close_fds=not IS_WINDOWS,
         ) as p:
             try:
-                _, stderr_data = p.communicate(timeout=timeout)
+                stdout_data, _ = p.communicate(timeout=timeout)
             except subprocess.TimeoutExpired as e:
                 p.kill()
                 message = f"Bench of {engine.name} timed out after {timeout} seconds."
@@ -483,11 +475,15 @@ def run_single_bench(engine, hash_size, threads, depth, timeout=600):
             if p.returncode != 0:
                 message = f"Bench run failed with exit code {format_returncode(p.returncode)}."
                 raise WorkerException(message)
-            for line in stderr_data.splitlines():
-                if "Total time (ms)" in line:
-                    bench_time = float(line.split(": ")[1].strip())
-                if "Nodes searched" in line:
-                    bench_nodes = float(line.split(": ")[1].strip())
+            # Owen prints: "bench depth D nodes N nps P time Tms bestmove B ..."
+            for line in stdout_data.splitlines():
+                if line.startswith("bench "):
+                    parts = line.split()
+                    for i, tok in enumerate(parts):
+                        if tok == "nodes":
+                            bench_nodes = float(parts[i + 1])
+                        elif tok == "time":
+                            bench_time = float(parts[i + 1].removesuffix("ms"))
     except (OSError, subprocess.SubprocessError) as e:
         message = f"Bench of {engine.name} failed to execute. Error: {e}"
         raise WorkerException(message, e=e) from e
@@ -569,26 +565,13 @@ def verify_signature(engine, signature):
 
 
 def get_cpu_features(engine):
-    cpu_features = "?"
-    with subprocess.Popen(
-        [engine, "compiler"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        universal_newlines=True,
-        bufsize=1,
-        close_fds=not IS_WINDOWS,
-    ) as p:
-        for line in iter(p.stdout.readline, ""):
-            if "settings" in line:
-                cpu_features = line.split(": ")[1].strip()
-    if p.returncode != 0:
-        message = f"Compiler info exited with non-zero code {format_returncode(p.returncode)}."
-        raise WorkerException(message)
-    return cpu_features
+    # Owen has no "compiler" command; report the worker's CPU architecture
+    # instead of launching the engine (which would block on stdin).
+    return platform.machine()
 
 
 def download_from_github_raw(
-    item, owner="official-stockfish", repo="books", branch="master"
+    item, owner="Owen-Foundation", repo="books", branch="master"
 ):
     item_url = f"{RAWCONTENT_HOST}/{owner}/{repo}/{branch}/{item}"
     print(f"Downloading {item_url}...")
@@ -596,7 +579,7 @@ def download_from_github_raw(
 
 
 def download_from_github_api(
-    item, owner="official-stockfish", repo="books", branch="master"
+    item, owner="Owen-Foundation", repo="books", branch="master"
 ):
     item_url = f"{API_HOST}/repos/{owner}/{repo}/contents/{item}?ref={branch}"
     print(f"Downloading {item_url}...")
@@ -605,7 +588,7 @@ def download_from_github_api(
 
 
 def download_from_github(
-    item, owner="official-stockfish", repo="books", branch="master"
+    item, owner="Owen-Foundation", repo="books", branch="master"
 ):
     try:
         blob = download_from_github_raw(item, owner=owner, repo=repo, branch=branch)
@@ -847,25 +830,33 @@ def setup_engine(
     compiler,
     version,
     global_cache,
+    nets=None,
 ):
+    """Fetch and build an Owen candidate.
+
+    DefenceTest tests are *net* tests: the same engine source is used and the
+    candidate is defined by the ``.o2nn`` network embedded at compile time via
+    Owen's OpenBench-compatible Makefile (``make EXE=... EVALFILE=...``).
+    """
+    nets = list(nets or [])
+    for net in nets:
+        establish_validated_net(remote, testing_dir, net, global_cache)
+
+    net_tag = "-".join(sorted(nets)) if nets else "nonet"
+    net_key = hashlib.sha1(net_tag.encode("utf-8")).hexdigest()[:8]
     compiler_ver = compiler + "_" + str("_".join([str(s) for s in version]))
     env, env_hash = create_environment()
-    engine_name = "-".join(["stockfish", sha, compiler_ver, env_hash])
-    engine_path = (testing_dir / (engine_name + "-old")).with_suffix(EXE_SUFFIX)
-    engine_path_native = (testing_dir / engine_name).with_suffix(EXE_SUFFIX)
-    for path in (engine_path_native, engine_path):
-        if not path.exists():
-            continue
-
-        if engine_is_healthy(path):
-            update_atime(path)
-            return path
-
-        print(f"Removing invalid engine {path}")
+    engine_name = "-".join(["owen", sha, compiler_ver, env_hash, net_key])
+    engine_path = (testing_dir / engine_name).with_suffix(EXE_SUFFIX)
+    if engine_path.exists():
+        if engine_is_healthy(engine_path):
+            update_atime(engine_path)
+            return engine_path
+        print(f"Removing invalid engine {engine_path}")
         try:
-            path.unlink()
+            engine_path.unlink()
         except Exception as e:
-            raise WorkerException(f"Failed to remove cached engine {path}:\n{e}")
+            raise WorkerException(f"Failed to remove cached engine {engine_path}:\n{e}")
 
     """Download and build sources in a temporary directory then move exe as engine_path"""
     worker_dir = testing_dir.parent
@@ -888,35 +879,24 @@ def setup_engine(
         if blob_needs_write:
             cache_write(global_cache, sha + ".zip", blob)
 
-        build_dir = (
-            tmp_dir / os.path.commonprefix([n.filename for n in file_list]) / "src"
-        )
-        os.chdir(build_dir)
+        # Owen's build files (Makefile, CMakeLists.txt) live at the repo root.
+        build_root = tmp_dir / os.path.commonprefix([n.filename for n in file_list])
+        os.chdir(build_root)
 
-        for net in required_nets_from_source():
-            print(f"Build uses default net: {net}")
-            establish_validated_net(remote, testing_dir, net, global_cache)
-            shutil.copyfile(testing_dir / net, net)
+        eval_arg = []
+        if nets:
+            net_path = testing_dir / nets[0]
+            print(f"Embedding net at build time: {net_path}")
+            eval_arg = [f"EVALFILE={net_path}"]
 
-        arch = find_arch(compiler)
-
-        if arch == "native":
-            engine_path = engine_path_native
-
-        if compiler == "g++":
-            comp = "mingw" if IS_WINDOWS else "gcc"
-        elif compiler == "clang++":
-            comp = "clang"
-
-        # skip temporarily the profiled build for apple silicon, see
-        # https://stackoverflow.com/questions/71580631/how-can-i-get-code-coverage-with-clang-13-0-1-on-mac
-        make_cmd = "build" if arch == "apple-silicon" else "profile-build"
+        # Owen's Makefile is OpenBench-compatible and wraps CMake.
+        #   make EXE=<name> [EVALFILE=<net>] CXX=<compiler> -j<N>
         cmd = [
             "make",
             f"-j{concurrency}",
-            f"{make_cmd}",
-            f"ARCH={arch}",
-            f"COMP={comp}",
+            f"EXE={engine_name}",
+            f"CXX={compiler}",
+            *eval_arg,
         ]
 
         with subprocess.Popen(
@@ -940,29 +920,18 @@ def setup_engine(
         if p.returncode != 0:
             raise WorkerException(f"Executing {cmd} failed. Error: {errors}")
 
-        cmd = ["make", "strip", f"COMP={comp}"]
-        try:
-            p = subprocess.run(
-                cmd,
-                stderr=subprocess.PIPE,
-                check=False,
-            )
-        except (OSError, subprocess.SubprocessError) as e:
-            raise FatalException(
-                f"Executing {' '.join(cmd)} raised Exception: {type(e).__name__}: {e}",
-                e=e,
-            )
-        if p.returncode != 0:
-            raise FatalException(
-                f"Executing {' '.join(cmd)} failed. Error: {p.stderr.decode().strip()}",
-            )
+        built = build_root / engine_name
+        if not built.exists() and built.with_suffix(EXE_SUFFIX).exists():
+            built = built.with_suffix(EXE_SUFFIX)
+        if not built.exists():
+            raise WorkerException(f"Build produced no engine at {built}")
 
         # We called setup_engine() because the engine was not cached.
         # Only another worker running in the same folder can have built the engine.
         if engine_path.exists():
             raise FatalException("Another worker is running in the same directory!")
         else:
-            (build_dir / "stockfish").with_suffix(EXE_SUFFIX).replace(engine_path)
+            built.replace(engine_path)
     finally:
         os.chdir(worker_dir)
         shutil.rmtree(tmp_dir)
@@ -1011,7 +980,7 @@ def adjust_tc(tc, factor):
     else:
         time_tc = float(chunks[0])
 
-    # Rebuild scaled_tc now: cutechess-cli and stockfish parse 3 decimal places.
+    # Rebuild scaled_tc now: cutechess-cli and owen parse 3 decimal places.
     scaled_tc = f"{time_tc * factor:.3f}"
     tc_limit = time_tc * factor * 3
     if increment > 0.0:
@@ -1211,7 +1180,7 @@ def parse_fastchess_output(
             count_fastchess_warnings[(pattern, engine_names)] = (count, exponential)
 
         # Parse line like this:
-        # Finished game 1 (stockfish vs base): 0-1 {White disconnects}
+        # Finished game 1 (owen vs base): 0-1 {White disconnects}
         if "disconnect" in line or "stall" in line:
             result["stats"]["crashes"] += 1
 
@@ -1591,6 +1560,7 @@ def run_games(
         compiler,
         version,
         global_cache,
+        nets=run["args"].get("new_nets"),
     )
     base_engine = setup_engine(
         testing_dir,
@@ -1601,19 +1571,11 @@ def run_games(
         compiler,
         version,
         global_cache,
+        nets=run["args"].get("base_nets"),
     )
 
     # Ensure we are back in the testing directory
     os.chdir(testing_dir)
-
-    # Add EvalFile* with full path to fastchess options, and download the networks if missing.
-    for option, net in required_nets(base_engine).items():
-        base_options.append(f"option.{option}={net}")
-        establish_validated_net(remote, testing_dir, net, global_cache)
-
-    for option, net in required_nets(new_engine).items():
-        new_options.append(f"option.{option}={net}")
-        establish_validated_net(remote, testing_dir, net, global_cache)
 
     # PGN files output setup.
     pgn_name = f"results-{run['_id']}-{task_id}.pgn"
@@ -1648,22 +1610,14 @@ def run_games(
     if run_errors:
         raise RunException("\n".join(run_errors))
 
-    # Fishtest with Stockfish 11 used 1.6 Mnps as the reference and 0.7 Mnps
-    # as the slow-worker threshold. The new reference (628000 nps) and
-    # threshold (180000 nps) result from comparing Stockfish 11 vs Stockfish 18
-    # bench values across several architectures and machines.
-    # Benches employed clang++ 21.1.8, parallel bench at depth 13, 100 iterations.
-    # Reference cores are Ryzen 7 PRO 7840U / Xeon E5-2680 v3; the slow-worker
-    # threshold uses Core i7 3770K so older machines remain viable.
-    # Values also live in rundb.py and delta_update_users.py. See GitHub PR #2459.
-    factor = 628000 / base_nps
-    min_nps_required = 180000 / (1 + 3 * math.tanh((worker_concurrency - 1) / 8))
-    if base_nps < min_nps_required:
-        message = (
-            f"This machine is too slow to run this task effectively - sorry!\n"
-            f"  - Your machine's speed: {base_nps:.0f} nps/thread\n"
-            f"  - Required minimum speed: {min_nps_required:.0f} nps/thread"
-        )
+    # DefenceTest time-control scaling.
+    # NOTE: the nps constants below are Owen placeholders. While the fork is
+    # being brought up we do not scale TC and do not reject slow machines, so
+    # that every worker contributes games. Recalibrate with real Owen bench
+    # values before enabling the slow-worker gate.
+    factor = 1.0
+    if base_nps <= 0:
+        message = f"Bench of {base_engine.name} produced a non-positive nps."
         raise FatalException(message)
 
     # Adjust CPU scaling.

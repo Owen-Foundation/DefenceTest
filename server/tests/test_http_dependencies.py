@@ -7,9 +7,9 @@ from unittest import mock
 from starlette.datastructures import State
 from starlette.requests import Request
 
-from fishtest.actiondb import ActionDb
-from fishtest.http.cookie_session import CookieSession
-from fishtest.http.dependencies import (
+from defencetest.actiondb import ActionDb
+from defencetest.http.cookie_session import CookieSession
+from defencetest.http.dependencies import (
     DependencyNotInitializedError,
     get_actiondb,
     get_request_context,
@@ -17,9 +17,9 @@ from fishtest.http.dependencies import (
     get_userdb,
     get_workerdb,
 )
-from fishtest.rundb import RunDb
-from fishtest.userdb import UserDb
-from fishtest.workerdb import WorkerDb
+from defencetest.rundb import RunDb
+from defencetest.userdb import UserDb
+from defencetest.workerdb import WorkerDb
 
 
 def _instance_without_init(cls):
@@ -78,9 +78,9 @@ class DependencyContractTests(unittest.TestCase):
         session = CookieSession(data={})
 
         with (
-            mock.patch("fishtest.http.dependencies.load_session", return_value=session),
+            mock.patch("defencetest.http.dependencies.load_session", return_value=session),
             mock.patch(
-                "fishtest.http.dependencies.authenticated_user",
+                "defencetest.http.dependencies.authenticated_user",
                 return_value="ContextUser",
             ),
         ):

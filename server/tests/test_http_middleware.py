@@ -44,7 +44,7 @@ class TestHttpMiddleware(unittest.TestCase):
         cls.FastAPI, cls.TestClient = test_support.require_fastapi()
 
     def setUp(self):
-        from fishtest.http.middleware import _blocked_cache
+        from defencetest.http.middleware import _blocked_cache
 
         original_timestamp = _blocked_cache.timestamp
         original_value = _blocked_cache.value
@@ -102,7 +102,7 @@ class TestHttpMiddleware(unittest.TestCase):
         self.assertEqual(payload["base_url"], "http://example.com")
 
     def test_reject_non_primary_worker_api(self):
-        from fishtest.http.middleware import RejectNonPrimaryWorkerApiMiddleware
+        from defencetest.http.middleware import RejectNonPrimaryWorkerApiMiddleware
 
         app = self.FastAPI()
         app.add_middleware(RejectNonPrimaryWorkerApiMiddleware)
@@ -125,9 +125,9 @@ class TestHttpMiddleware(unittest.TestCase):
 
         from itsdangerous import TimestampSigner
 
-        from fishtest.http.cookie_session import SESSION_COOKIE_NAME, session_secret_key
+        from defencetest.http.cookie_session import SESSION_COOKIE_NAME, session_secret_key
 
-        os.environ.setdefault("FISHTEST_AUTHENTICATION_SECRET", "test-secret")
+        os.environ.setdefault("DEFENCETEST_AUTHENTICATION_SECRET", "test-secret")
 
         userdb = _UserDbStub(blocked_username="test_blocked_user")
         rundb = _RunDbStub(userdb=userdb)
@@ -154,7 +154,7 @@ class TestHttpMiddleware(unittest.TestCase):
         self.assertIn(f"{SESSION_COOKIE_NAME}=", set_cookie)
 
     def test_head_method_returns_200_with_empty_body(self):
-        from fishtest.http.middleware import HeadMethodMiddleware
+        from defencetest.http.middleware import HeadMethodMiddleware
 
         app = self.FastAPI()
         app.add_middleware(HeadMethodMiddleware)
@@ -171,7 +171,7 @@ class TestHttpMiddleware(unittest.TestCase):
     def test_head_method_preserves_content_type(self):
         from fastapi.responses import HTMLResponse
 
-        from fishtest.http.middleware import HeadMethodMiddleware
+        from defencetest.http.middleware import HeadMethodMiddleware
 
         app = self.FastAPI()
         app.add_middleware(HeadMethodMiddleware)
@@ -187,7 +187,7 @@ class TestHttpMiddleware(unittest.TestCase):
         self.assertEqual(response.content, b"")
 
     def test_head_on_post_only_route_returns_405(self):
-        from fishtest.http.middleware import HeadMethodMiddleware
+        from defencetest.http.middleware import HeadMethodMiddleware
 
         app = self.FastAPI()
         app.add_middleware(HeadMethodMiddleware)
@@ -222,15 +222,15 @@ class TestHttpMiddlewareMongo(unittest.TestCase):
 
         from itsdangerous import TimestampSigner
 
-        from fishtest.http.cookie_session import session_secret_key
+        from defencetest.http.cookie_session import session_secret_key
 
         signer = TimestampSigner(session_secret_key())
         data = b64encode(json.dumps({"user": username}).encode("utf-8"))
         return signer.sign(data).decode("utf-8")
 
     def test_redirect_blocked_ui_users_with_real_userdb(self):
-        from fishtest.http.cookie_session import SESSION_COOKIE_NAME
-        from fishtest.http.middleware import _blocked_cache
+        from defencetest.http.cookie_session import SESSION_COOKIE_NAME
+        from defencetest.http.middleware import _blocked_cache
 
         username = "httpmwblocked"
         self.rundb.userdb.users.delete_many({"username": username})
@@ -269,8 +269,8 @@ class TestHttpMiddlewareMongo(unittest.TestCase):
         self.assertIn(f"{SESSION_COOKIE_NAME}=null", set_cookie)
 
     def test_allows_non_blocked_ui_user_with_real_userdb(self):
-        from fishtest.http.cookie_session import SESSION_COOKIE_NAME
-        from fishtest.http.middleware import _blocked_cache
+        from defencetest.http.cookie_session import SESSION_COOKIE_NAME
+        from defencetest.http.middleware import _blocked_cache
 
         username = "httpmwallowed"
         self.rundb.userdb.users.delete_many({"username": username})

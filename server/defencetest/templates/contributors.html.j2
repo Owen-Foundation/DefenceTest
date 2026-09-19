@@ -1,0 +1,140 @@
+{% extends "base.html.j2" %}
+
+{% set is_monthly = is_monthly if is_monthly is defined else false %}
+{% set monthly_suffix = monthly_suffix if monthly_suffix is defined else "" %}
+{% set search = search if search is defined else "" %}
+{% set sort = sort if sort is defined else "cpu_hours" %}
+{% set order = order if order is defined else "desc" %}
+{% set view = view if view is defined else "paged" %}
+{% set highlight = highlight if highlight is defined else "" %}
+{% set is_truncated = is_truncated if is_truncated is defined else false %}
+{% set num_users = num_users if num_users is defined else 0 %}
+{% set max_all = max_all if max_all is defined else 5000 %}
+
+{% block title %}Contributors{{ monthly_suffix }} | DefenceTest{% endblock %}
+
+{% block body %}
+<h2>Contributors{{ monthly_suffix }}</h2>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-sm">
+    <div class="card card-lg-sm text-center h-100">
+      <div class="card-header text-nowrap" title="Testers">Testers</div>
+      <div class="card-body">
+        <h4 class="card-title mb-0 monospace summary-card-value">
+          {{ summary.testers }}
+        </h4>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-sm">
+    <div class="card card-lg-sm text-center h-100">
+      <div class="card-header text-nowrap" title="Developers">Developers</div>
+      <div class="card-body">
+        <h4 class="card-title mb-0 monospace summary-card-value">
+          {{ summary.developers }}
+        </h4>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-sm">
+    <div class="card card-lg-sm text-center h-100">
+      <div class="card-header text-nowrap" title="Active testers">Active testers</div>
+      <div class="card-body">
+        <h4 class="card-title mb-0 monospace summary-card-value">
+          {{ summary.active_testers }}
+        </h4>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-sm">
+    <div class="card card-lg-sm text-center h-100">
+      <div class="card-header text-nowrap" title="CPU years">CPU years</div>
+      <div class="card-body">
+        <h4 class="card-title mb-0 monospace summary-card-value">
+          {{ "{0:.2f}".format(summary.cpu_hours / (24 * 365)) }}
+        </h4>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-sm">
+    <div class="card card-lg-sm text-center h-100">
+      <div class="card-header text-nowrap" title="Games played">Games played</div>
+      <div class="card-body">
+        <h4 class="card-title mb-0 monospace summary-card-value">
+          {{ summary.games }}
+        </h4>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-sm">
+    <div class="card card-lg-sm text-center h-100">
+      <div class="card-header text-nowrap" title="Tests submitted">Tests submitted</div>
+      <div class="card-body">
+        <h4 class="card-title mb-0 monospace summary-card-value">
+          {{ summary.tests }}
+        </h4>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form
+  class="row mb-3"
+  id="search_contributors_form"
+  data-findme-cookie-name="contributors_findme"
+  data-findme-cookie-max-age="{{ cookies.contributors_findme_max_age }}"
+  action="{{ request.url.path }}"
+  hx-get="{{ request.url.path }}"
+  hx-target="#contributors-content"
+  hx-push-url="true"
+  hx-swap="innerHTML"
+  hx-trigger="submit, input changed delay:{{ htmx.input_changed_delay_ms }}ms from:#search_contributors, search from:#search_contributors{% if current_user and current_user.username %}, change from:#findme_contributors{% endif %}"
+>
+  <input type="hidden" id="contributors_view" name="view" value="{{ view }}">
+  <input type="hidden" id="contributors_sort" name="sort" value="{{ sort }}">
+  <input type="hidden" id="contributors_order" name="order" value="{{ order }}">
+
+  <div class="col-12 col-md-auto mb-3">
+    <label for="search_contributors" class="form-label">Go to username</label>
+    <input
+      id="search_contributors"
+      class="form-control"
+      placeholder="Type username"
+      type="search"
+      name="search"
+      value="{{ search }}"
+      autocomplete="off"
+    >
+  </div>
+
+  {% if current_user and current_user.username %}
+    <div class="col-12 mb-3 d-flex align-items-end">
+      <div class="form-check form-check-inline">
+        <label class="form-check-label" for="findme_contributors">
+          Jump to my rank
+        </label>
+        <input
+          type="checkbox"
+          class="form-check-input"
+          id="findme_contributors"
+          name="findme"
+          value="1"
+        >
+    </div>
+  </div>
+  {% endif %}
+</form>
+
+<div id="contributors-content">
+  {% include "contributors_content_fragment.html.j2" %}
+</div>
+
+<script src="{{ static_url('defencetest:static/js/contributors.js') }}"></script>
+
+{% endblock %}

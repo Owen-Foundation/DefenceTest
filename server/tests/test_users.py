@@ -8,11 +8,11 @@ import test_support
 from ui_user_test_case import UiUserTestCase
 from vtjson import ValidationError
 
-from fishtest.http.settings import (
+from defencetest.http.settings import (
     SESSION_REMEMBER_ME_MAX_AGE_SECONDS,
     UI_STATE_COOKIE_MAX_AGE_SECONDS,
 )
-from fishtest.util import PASSWORD_MAX_LENGTH
+from defencetest.util import PASSWORD_MAX_LENGTH
 
 
 class TestUsers(UiUserTestCase):
@@ -116,11 +116,11 @@ class TestUsers(UiUserTestCase):
         with (
             patch.dict(
                 "os.environ",
-                {"FISHTEST_CAPTCHA_SECRET": "test-secret"},
+                {"DEFENCETEST_CAPTCHA_SECRET": "test-secret"},
                 clear=False,
             ),
             patch(
-                "fishtest.views.requests.post",
+                "defencetest.views.requests.post",
                 return_value=type(
                     "_CaptchaResponse",
                     (),
@@ -162,11 +162,11 @@ class TestUsers(UiUserTestCase):
         with (
             patch.dict(
                 "os.environ",
-                {"FISHTEST_CAPTCHA_SECRET": "test-secret"},
+                {"DEFENCETEST_CAPTCHA_SECRET": "test-secret"},
                 clear=False,
             ),
             patch(
-                "fishtest.views.requests.post",
+                "defencetest.views.requests.post",
                 return_value=type(
                     "_CaptchaResponse",
                     (),
@@ -271,9 +271,9 @@ class TestUsers(UiUserTestCase):
         )
         self.assertEqual(response.status_code, 302)
         self._assert_no_store_headers(response)
-        session_cookie = self._response_cookie(response, "fishtest_session")
+        session_cookie = self._response_cookie(response, "defencetest_session")
         remember_cookie = self._response_cookie(response, "login_remember_me")
-        self.assertIn("fishtest_session=", session_cookie)
+        self.assertIn("defencetest_session=", session_cookie)
         self.assertIn(
             f"Max-Age={SESSION_REMEMBER_ME_MAX_AGE_SECONDS}",
             session_cookie,
@@ -301,9 +301,9 @@ class TestUsers(UiUserTestCase):
             follow_redirects=False,
         )
         self.assertEqual(response.status_code, 302)
-        session_cookie = self._response_cookie(response, "fishtest_session")
+        session_cookie = self._response_cookie(response, "defencetest_session")
         remember_cookie = self._response_cookie(response, "login_remember_me")
-        self.assertIn("fishtest_session=", session_cookie)
+        self.assertIn("defencetest_session=", session_cookie)
         self.assertIn(
             f"Max-Age={SESSION_REMEMBER_ME_MAX_AGE_SECONDS}",
             session_cookie,
@@ -327,9 +327,9 @@ class TestUsers(UiUserTestCase):
             follow_redirects=False,
         )
         self.assertEqual(response.status_code, 302)
-        session_cookie = self._response_cookie(response, "fishtest_session")
+        session_cookie = self._response_cookie(response, "defencetest_session")
         remember_cookie = self._response_cookie(response, "login_remember_me")
-        self.assertIn("fishtest_session=", session_cookie)
+        self.assertIn("defencetest_session=", session_cookie)
         self.assertNotIn("Max-Age=", session_cookie)
         self.assertIn("login_remember_me=0", remember_cookie)
         self.assertIn(f"max-age={UI_STATE_COOKIE_MAX_AGE_SECONDS}", remember_cookie)

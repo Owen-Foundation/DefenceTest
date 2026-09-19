@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 class AwsConfig:
     """Configuration for AWS S3 bucket."""
 
-    bucket: str = "s3://fishtest/backup/archive/nn/"
+    bucket: str = "s3://defencetest/backup/archive/nn/"
     bin: Path = field(
         default_factory=lambda: (
             Path(get_required_env_var("VENV", expand=True)) / "bin" / "aws"
@@ -236,8 +236,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--path",
-        default="/var/www/fishtest/nn",
-        help="Path to the nets folder (default: /var/www/fishtest/nn)",
+        default="/var/www/defencetest/nn",
+        help="Path to the nets folder (default: /var/www/defencetest/nn)",
     )
     return parser.parse_args()
 

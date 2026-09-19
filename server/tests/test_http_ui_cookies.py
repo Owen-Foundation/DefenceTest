@@ -3,7 +3,7 @@
 import unittest
 from types import SimpleNamespace
 
-from fishtest.http.ui_cookies import (
+from defencetest.http.ui_cookies import (
     append_ui_cookie,
     build_ui_cookie_header,
     read_cookie_bool,

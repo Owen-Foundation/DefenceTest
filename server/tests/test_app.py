@@ -49,8 +49,8 @@ class _RunDbStub:
 
 class TestHttpApp(unittest.TestCase):
     def test_create_app_home_redirect_and_middleware(self):
-        import fishtest.app as app_module
-        from fishtest.http.settings import AppSettings
+        import defencetest.app as app_module
+        from defencetest.http.settings import AppSettings
 
         _FastAPI, TestClient = test_support.require_fastapi()
 
@@ -59,7 +59,7 @@ class TestHttpApp(unittest.TestCase):
 
         settings = AppSettings(port=8000, primary_port=8000, is_primary_instance=False)
 
-        with mock.patch.dict("os.environ", {"FISHTEST_INSECURE_DEV": "1"}, clear=False):
+        with mock.patch.dict("os.environ", {"DEFENCETEST_INSECURE_DEV": "1"}, clear=False):
             with (
                 mock.patch.object(app_module, "RunDb", _RunDbStub),
                 mock.patch.object(
@@ -89,8 +89,8 @@ class TestHttpApp(unittest.TestCase):
         self.assertEqual(response.headers.get("location"), "/tests")
 
     def test_secondary_instance_initializes_github_helper_without_refresh(self):
-        import fishtest.app as app_module
-        from fishtest.http.settings import AppSettings
+        import defencetest.app as app_module
+        from defencetest.http.settings import AppSettings
 
         _FastAPI, TestClient = test_support.require_fastapi()
 
@@ -99,7 +99,7 @@ class TestHttpApp(unittest.TestCase):
 
         settings = AppSettings(port=8001, primary_port=8000, is_primary_instance=False)
 
-        with mock.patch.dict("os.environ", {"FISHTEST_INSECURE_DEV": "1"}, clear=False):
+        with mock.patch.dict("os.environ", {"DEFENCETEST_INSECURE_DEV": "1"}, clear=False):
             with (
                 mock.patch.object(app_module, "RunDb", _RunDbStub),
                 mock.patch.object(
@@ -127,8 +127,8 @@ class TestHttpApp(unittest.TestCase):
         )
 
     def test_openapi_url_enables_non_empty_schema_paths(self):
-        import fishtest.app as app_module
-        from fishtest.http.settings import AppSettings
+        import defencetest.app as app_module
+        from defencetest.http.settings import AppSettings
 
         _FastAPI, TestClient = test_support.require_fastapi()
 
@@ -142,7 +142,7 @@ class TestHttpApp(unittest.TestCase):
             openapi_url="/openapi.json",
         )
 
-        with mock.patch.dict("os.environ", {"FISHTEST_INSECURE_DEV": "1"}, clear=False):
+        with mock.patch.dict("os.environ", {"DEFENCETEST_INSECURE_DEV": "1"}, clear=False):
             with (
                 mock.patch.object(app_module, "RunDb", _RunDbStub),
                 mock.patch.object(

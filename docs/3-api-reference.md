@@ -30,7 +30,7 @@ A worker's interaction with the server follows this sequence:
 ```mermaid
 sequenceDiagram
   actor W as Worker
-  participant S as Fishtest server
+  participant S as DefenceTest server
   participant F as Fastchess
 
   W->>S: POST /api/request_version
@@ -76,7 +76,7 @@ sequenceDiagram
    a newer version, the worker self-updates and restarts.
 2. **Task request** -- `POST /api/request_task`. The server assigns a task
    or returns `{"task_waiting": false}`. The worker retries after a delay.
-3. **Engine build** -- The worker compiles Stockfish from source (cached
+3. **Engine build** -- The worker compiles Owen from source (cached
    by SHA + compiler + environment hash).
 4. **Game execution** -- The worker launches fastchess and streams results.
    For SPSA runs, `POST /api/request_spsa` fetches tuning parameters
@@ -392,7 +392,7 @@ Computes ELO from provided W/D/L or pentanomial counts. Query parameters:
 
 ### GET /api/nn/{id}
 
-Redirects to the neural network download URL (`FISHTEST_NN_URL`). Increments
+Redirects to the neural network download URL (`DEFENCETEST_NN_URL`). Increments
 the download counter.
 
 ### GET /api/pgn/{id}

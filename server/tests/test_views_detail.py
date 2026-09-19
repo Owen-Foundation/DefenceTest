@@ -7,9 +7,9 @@ from pathlib import Path
 import test_support
 from ui_user_test_case import UiUserTestCase
 
-from fishtest.http.settings import UI_STATE_COOKIE_MAX_AGE_SECONDS
-from fishtest.http.ui_cookies import SPSA_PERCENTAGE_COOKIE_NAME
-from fishtest.run_cache import Prio
+from defencetest.http.settings import UI_STATE_COOKIE_MAX_AGE_SECONDS
+from defencetest.http.ui_cookies import SPSA_PERCENTAGE_COOKIE_NAME
+from defencetest.run_cache import Prio
 
 
 def _make_task(task_id, username, unique_key, now, *, wins, losses, draws):
@@ -55,7 +55,7 @@ class TestTestsViewDetail(unittest.TestCase):
             cls.username,
             "test-detail-password",
             "view-detail@example.com",
-            "https://github.com/official-stockfish/Stockfish",
+            "https://github.com/Owen-Foundation/Owen",
         )
 
     @classmethod
@@ -109,7 +109,7 @@ class TestTestsViewDetail(unittest.TestCase):
             base_nets=["nn-0000000000a0.nnue"],
             new_nets=["nn-0000000000a0.nnue"],
             rescheduled_from="653db116cc309ae839563103",
-            tests_repo="https://github.com/official-stockfish/Stockfish",
+            tests_repo="https://github.com/Owen-Foundation/Owen",
             auto_purge=False,
             username=self.username,
             start_time=datetime.now(UTC),
@@ -212,7 +212,7 @@ class TestTestsViewDetail(unittest.TestCase):
                 response.text,
                 property_name="og:title",
             ),
-            "400 games - master vs master | Stockfish Testing",
+            "400 games - master vs master | Owen Testing",
         )
         self.assertEqual(
             test_support.extract_meta_content(
@@ -471,13 +471,13 @@ class TestSpsaChartAssets(unittest.TestCase):
     def test_spsa_plot_shell_keeps_fixed_chart_dimensions(self):
         repo_root = Path(__file__).resolve().parents[1]
         template_source = (
-            repo_root / "fishtest" / "templates" / "tests_view_spsa_section.html.j2"
+            repo_root / "defencetest" / "templates" / "tests_view_spsa_section.html.j2"
         ).read_text(encoding="utf-8")
         css_source = (
-            repo_root / "fishtest" / "static" / "css" / "application.css"
+            repo_root / "defencetest" / "static" / "css" / "application.css"
         ).read_text(encoding="utf-8")
         script_source = (
-            repo_root / "fishtest" / "static" / "js" / "spsa.js"
+            repo_root / "defencetest" / "static" / "js" / "spsa.js"
         ).read_text(encoding="utf-8")
 
         self.assertIn('id="spsa_history_plot"', template_source)
@@ -501,7 +501,7 @@ class TestSpsaChartAssets(unittest.TestCase):
     def test_spsa_plot_script_reads_server_shaped_chart_rows(self):
         repo_root = Path(__file__).resolve().parents[1]
         script_source = (
-            repo_root / "fishtest" / "static" / "js" / "spsa.js"
+            repo_root / "defencetest" / "static" / "js" / "spsa.js"
         ).read_text(encoding="utf-8")
 
         self.assertIn(
@@ -530,7 +530,7 @@ class TestSpsaChartAssets(unittest.TestCase):
     def test_spsa_percentage_uses_server_shaped_c_values(self):
         repo_root = Path(__file__).resolve().parents[1]
         script_source = (
-            repo_root / "fishtest" / "static" / "js" / "spsa.js"
+            repo_root / "defencetest" / "static" / "js" / "spsa.js"
         ).read_text(encoding="utf-8")
 
         self.assertIn(
@@ -562,7 +562,7 @@ class TestTestsViewTasks(UiUserTestCase):
     def test_tests_view_tasks_loader_attaches_before_domcontentloaded(self):
         template_path = (
             Path(__file__).resolve().parents[1]
-            / "fishtest"
+            / "defencetest"
             / "templates"
             / "tests_view.html.j2"
         )
@@ -628,7 +628,7 @@ class TestTestsViewTasks(UiUserTestCase):
     def test_tests_view_tasks_filters_include_worker_and_info_search(self):
         template_path = (
             Path(__file__).resolve().parents[1]
-            / "fishtest"
+            / "defencetest"
             / "templates"
             / "tests_view.html.j2"
         )
@@ -672,7 +672,7 @@ class TestTestsViewTasks(UiUserTestCase):
         self.assertIn("await nextFrame();", template_source)
         template_path = (
             Path(__file__).resolve().parents[1]
-            / "fishtest"
+            / "defencetest"
             / "templates"
             / "tasks_content_fragment.html.j2"
         )
@@ -701,7 +701,7 @@ class TestTestsViewTasks(UiUserTestCase):
     def test_tasks_controls_fragment_disinherits_filter_include(self):
         template_path = (
             Path(__file__).resolve().parents[1]
-            / "fishtest"
+            / "defencetest"
             / "templates"
             / "tasks_controls_fragment.html.j2"
         )
@@ -1056,7 +1056,7 @@ class TestTestsViewTasks(UiUserTestCase):
     def test_application_css_styles_task_search_cancel_button(self):
         css_path = (
             Path(__file__).resolve().parents[1]
-            / "fishtest"
+            / "defencetest"
             / "static"
             / "css"
             / "application.css"
@@ -1083,7 +1083,7 @@ class TestTestsViewDiffWarning(UiUserTestCase):
     def test_diff_overflow_warning_assets_are_present(self):
         template_path = (
             Path(__file__).resolve().parents[1]
-            / "fishtest"
+            / "defencetest"
             / "templates"
             / "tests_view.html.j2"
         )
@@ -1111,7 +1111,7 @@ class TestTestsViewDiffWarning(UiUserTestCase):
 
         css_path = (
             Path(__file__).resolve().parents[1]
-            / "fishtest"
+            / "defencetest"
             / "static"
             / "css"
             / "application.css"

@@ -4,7 +4,7 @@ import threading
 import time
 import unittest
 
-from fishtest.lru_cache import LRUCache, lru_cache
+from defencetest.lru_cache import LRUCache, lru_cache
 
 
 class CreateLRUCacheTest(unittest.TestCase):

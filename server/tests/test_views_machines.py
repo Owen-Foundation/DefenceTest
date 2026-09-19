@@ -6,8 +6,8 @@ from unittest.mock import patch
 
 from ui_user_test_case import UiUserTestCase
 
-from fishtest.http.settings import UI_STATE_COOKIE_MAX_AGE_SECONDS
-from fishtest.views_machines import (
+from defencetest.http.settings import UI_STATE_COOKIE_MAX_AGE_SECONDS
+from defencetest.views_machines import (
     _MACHINES_PAGE_SIZE,
     _filtered_machine_count,
     _machine_filter_state,

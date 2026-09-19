@@ -10,9 +10,9 @@ import test_support
 from starlette.responses import RedirectResponse
 from ui_user_test_case import UiUserTestCase
 
-from fishtest.run_cache import Prio
-from fishtest.spsa_workflow import parse_spsa_params
-from fishtest.views_run import (
+from defencetest.run_cache import Prio
+from defencetest.spsa_workflow import parse_spsa_params
+from defencetest.views_run import (
     _RUN_MODIFY_MAX_AGE_DAYS,
     can_modify_run,
     del_tasks,
@@ -28,7 +28,7 @@ BASE_PRIORITY = "10"
 BASE_THROUGHPUT = "100"
 BASE_NUM_GAMES = "1000"
 BASE_TC = "10+0.1"
-BASE_REPO = "https://github.com/official-stockfish/Stockfish"
+BASE_REPO = "https://github.com/Owen-Foundation/Owen"
 BASE_SIGNATURE = "123456"
 BASE_SHA = "a" * 40
 NEW_SHA = "b" * 40
@@ -241,18 +241,18 @@ class ValidateFormTests(unittest.TestCase):
 
         with (
             mock.patch(
-                "fishtest.views_run.gh.normalize_repo", side_effect=lambda repo: repo
+                "defencetest.views_run.gh.normalize_repo", side_effect=lambda repo: repo
             ),
             mock.patch(
-                "fishtest.views_run.gh.parse_repo",
-                return_value=("official-stockfish", "Stockfish"),
+                "defencetest.views_run.gh.parse_repo",
+                return_value=("Owen-Foundation", "Owen"),
             ),
-            mock.patch("fishtest.views_run.gh.get_master_repo", return_value=BASE_REPO),
+            mock.patch("defencetest.views_run.gh.get_master_repo", return_value=BASE_REPO),
             mock.patch(
-                "fishtest.views_run.get_sha",
+                "defencetest.views_run.get_sha",
                 side_effect=[(BASE_SHA, "base"), (NEW_SHA, "new")],
             ),
-            mock.patch("fishtest.views_run.get_nets", return_value=[]),
+            mock.patch("defencetest.views_run.get_nets", return_value=[]),
         ):
             data = validate_form(request)
 
@@ -270,18 +270,18 @@ class ValidateFormTests(unittest.TestCase):
 
         with (
             mock.patch(
-                "fishtest.views_run.gh.normalize_repo", side_effect=lambda repo: repo
+                "defencetest.views_run.gh.normalize_repo", side_effect=lambda repo: repo
             ),
             mock.patch(
-                "fishtest.views_run.gh.parse_repo",
-                return_value=("official-stockfish", "Stockfish"),
+                "defencetest.views_run.gh.parse_repo",
+                return_value=("Owen-Foundation", "Owen"),
             ),
-            mock.patch("fishtest.views_run.gh.get_master_repo", return_value=BASE_REPO),
+            mock.patch("defencetest.views_run.gh.get_master_repo", return_value=BASE_REPO),
             mock.patch(
-                "fishtest.views_run.get_sha",
+                "defencetest.views_run.get_sha",
                 side_effect=[(BASE_SHA, "base"), (NEW_SHA, "new")],
             ),
-            mock.patch("fishtest.views_run.get_nets", return_value=[]),
+            mock.patch("defencetest.views_run.get_nets", return_value=[]),
         ):
             with self.assertRaisesRegex(ValueError, "Number of games must be >= 1000"):
                 validate_form(request)
@@ -293,18 +293,18 @@ class ValidateFormTests(unittest.TestCase):
 
         with (
             mock.patch(
-                "fishtest.views_run.gh.normalize_repo", side_effect=lambda repo: repo
+                "defencetest.views_run.gh.normalize_repo", side_effect=lambda repo: repo
             ),
             mock.patch(
-                "fishtest.views_run.gh.parse_repo",
-                return_value=("official-stockfish", "Stockfish"),
+                "defencetest.views_run.gh.parse_repo",
+                return_value=("Owen-Foundation", "Owen"),
             ),
-            mock.patch("fishtest.views_run.gh.get_master_repo", return_value=BASE_REPO),
+            mock.patch("defencetest.views_run.gh.get_master_repo", return_value=BASE_REPO),
             mock.patch(
-                "fishtest.views_run.get_sha",
+                "defencetest.views_run.get_sha",
                 side_effect=[(BASE_SHA, "base"), (NEW_SHA, "new")],
             ),
-            mock.patch("fishtest.views_run.get_nets", return_value=[]),
+            mock.patch("defencetest.views_run.get_nets", return_value=[]),
         ):
             with self.assertRaisesRegex(
                 ValueError,
@@ -324,18 +324,18 @@ class ValidateFormTests(unittest.TestCase):
 
         with (
             mock.patch(
-                "fishtest.views_run.gh.normalize_repo", side_effect=lambda repo: repo
+                "defencetest.views_run.gh.normalize_repo", side_effect=lambda repo: repo
             ),
             mock.patch(
-                "fishtest.views_run.gh.parse_repo",
-                return_value=("official-stockfish", "Stockfish"),
+                "defencetest.views_run.gh.parse_repo",
+                return_value=("Owen-Foundation", "Owen"),
             ),
-            mock.patch("fishtest.views_run.gh.get_master_repo", return_value=BASE_REPO),
+            mock.patch("defencetest.views_run.gh.get_master_repo", return_value=BASE_REPO),
             mock.patch(
-                "fishtest.views_run.get_sha",
+                "defencetest.views_run.get_sha",
                 side_effect=[(BASE_SHA, "base"), (NEW_SHA, "new")],
             ),
-            mock.patch("fishtest.views_run.get_nets", return_value=[]),
+            mock.patch("defencetest.views_run.get_nets", return_value=[]),
         ):
             with self.assertRaisesRegex(ValueError, "Number of games must be >= 1000"):
                 validate_form(request)
@@ -347,17 +347,17 @@ class ValidateFormTests(unittest.TestCase):
         request.userdb._user["tests_repo"] = BASE_REPO + "/"
 
         with (
-            mock.patch("fishtest.views_run.gh.normalize_repo", return_value=BASE_REPO),
+            mock.patch("defencetest.views_run.gh.normalize_repo", return_value=BASE_REPO),
             mock.patch(
-                "fishtest.views_run.gh.parse_repo",
-                return_value=("official-stockfish", "Stockfish"),
+                "defencetest.views_run.gh.parse_repo",
+                return_value=("Owen-Foundation", "Owen"),
             ),
-            mock.patch("fishtest.views_run.gh.get_master_repo", return_value=BASE_REPO),
+            mock.patch("defencetest.views_run.gh.get_master_repo", return_value=BASE_REPO),
             mock.patch(
-                "fishtest.views_run.get_sha",
+                "defencetest.views_run.get_sha",
                 side_effect=[(BASE_SHA, "base"), (NEW_SHA, "new")],
             ),
-            mock.patch("fishtest.views_run.get_nets", return_value=[]),
+            mock.patch("defencetest.views_run.get_nets", return_value=[]),
         ):
             data = validate_form(request)
 
@@ -372,13 +372,13 @@ class ValidateFormTests(unittest.TestCase):
 
         with (
             mock.patch(
-                "fishtest.views_run.gh.normalize_repo", side_effect=lambda repo: repo
+                "defencetest.views_run.gh.normalize_repo", side_effect=lambda repo: repo
             ),
             mock.patch(
-                "fishtest.views_run.gh.parse_repo",
-                return_value=("official-stockfish", "Stockfish"),
+                "defencetest.views_run.gh.parse_repo",
+                return_value=("Owen-Foundation", "Owen"),
             ),
-            mock.patch("fishtest.views_run.gh.get_master_repo", return_value=BASE_REPO),
+            mock.patch("defencetest.views_run.gh.get_master_repo", return_value=BASE_REPO),
         ):
             with self.assertRaisesRegex(ValueError, "Invalid arch filter"):
                 validate_form(request)
@@ -388,7 +388,7 @@ class TemplateConstraintContractTests(unittest.TestCase):
     def test_tests_run_template_uses_shared_create_num_games_constraints(self):
         repo_root = Path(__file__).resolve().parents[1]
         template_source = (
-            repo_root / "fishtest" / "templates" / "tests_run.html.j2"
+            repo_root / "defencetest" / "templates" / "tests_run.html.j2"
         ).read_text(encoding="utf-8")
 
         self.assertIn(
@@ -415,7 +415,7 @@ class TemplateConstraintContractTests(unittest.TestCase):
     def test_tests_view_template_uses_shared_modify_num_games_constraints(self):
         repo_root = Path(__file__).resolve().parents[1]
         template_source = (
-            repo_root / "fishtest" / "templates" / "tests_view.html.j2"
+            repo_root / "defencetest" / "templates" / "tests_view.html.j2"
         ).read_text(encoding="utf-8")
 
         self.assertIn(
@@ -430,7 +430,7 @@ class TemplateConstraintContractTests(unittest.TestCase):
     def test_tests_run_template_sets_auto_purge_defaults_by_test_type(self):
         repo_root = Path(__file__).resolve().parents[1]
         template_source = (
-            repo_root / "fishtest" / "templates" / "tests_run.html.j2"
+            repo_root / "defencetest" / "templates" / "tests_run.html.j2"
         ).read_text(encoding="utf-8")
 
         checkbox_default = re.search(

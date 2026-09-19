@@ -303,14 +303,14 @@ following steps in order:
 
 ### Storage
 
-`FishtestSessionMiddleware` (pure ASGI) manages session persistence. Session
+`DefenceTestSessionMiddleware` (pure ASGI) manages session persistence. Session
 data lives in `request.scope["session"]` as a plain dict, wrapped by
 `CookieSession` for helper access.
 
 ### Cookie format
 
 - Signed with `itsdangerous.TimestampSigner`.
-- Cookie name: `fishtest_session`.
+- Cookie name: `defencetest_session`.
 - Encoding: base64(JSON(session_data)), signed.
 - Maximum cookie size: 3800 bytes (enforced; flash messages are trimmed if
   exceeded).
@@ -348,8 +348,8 @@ Cookie ownership is split intentionally:
 
 The UI uses two cookie families with different ownership and lifecycles:
 
-- **Session/auth cookie** -- `fishtest_session`, emitted by
-   `FishtestSessionMiddleware`.
+- **Session/auth cookie** -- `defencetest_session`, emitted by
+   `DefenceTestSessionMiddleware`.
 - **UI state cookies** -- lightweight browser-side preferences such as `theme`,
    `contributors_findme`, `machines_state`, and the homepage workers filters.
    These non-auth UI cookies use the shared `400 days` max-age policy from
@@ -358,7 +358,7 @@ The UI uses two cookie families with different ownership and lifecycles:
 
 ### Session cookie lifecycle
 
-1. `FishtestSessionMiddleware` reads `fishtest_session` at request start and
+1. `DefenceTestSessionMiddleware` reads `defencetest_session` at request start and
     decodes the signed JSON payload into `scope["session"]`.
 2. `load_session()` wraps that dict in `CookieSession`, which lazily creates
     `created_at` and the CSRF token on first access.
@@ -369,7 +369,7 @@ The UI uses two cookie families with different ownership and lifecycles:
 5. On logout, `forget()` clears the session and marks the response to emit an
     expired cookie.
 6. `commit_session_response()` translates those flags into request-scope
-    overrides, and `FishtestSessionMiddleware` finally appends the `Set-Cookie`
+    overrides, and `DefenceTestSessionMiddleware` finally appends the `Set-Cookie`
     header on the outbound response.
 
 ### UI state cookie lifecycle

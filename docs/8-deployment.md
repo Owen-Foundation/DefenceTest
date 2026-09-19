@@ -13,25 +13,25 @@
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `FISHTEST_PORT` | Yes | `-1` | Port for this instance |
-| `FISHTEST_PRIMARY_PORT` | Yes | `-1` | Fixed primary port (typically 8000) |
-| `FISHTEST_URL` | Dev: No; Prod: Yes | -- | Public URL (e.g., `https://tests.stockfishchess.org`); may be empty in development for dynamic host/IP |
-| `FISHTEST_NN_URL` | No | (unset => request host; empty => same-host) | Base URL workers use to download neural networks (see below) |
-| `FISHTEST_AUTHENTICATION_SECRET` | Yes | -- | Cookie signing secret (itsdangerous) |
-| `FISHTEST_CAPTCHA_SECRET` | No | -- | reCAPTCHA secret key for signup |
-| `FISHTEST_CAPTCHA_SITE_KEY` | No | built-in | reCAPTCHA site key for signup |
-| `FISHTEST_INSECURE_DEV` | No | -- | Set to `1` for development mode (insecure secret) |
-| `FISHTEST_JINJA_TEMPLATES_DIR` | No | auto | Override Jinja2 templates directory |
+| `DEFENCETEST_PORT` | Yes | `-1` | Port for this instance |
+| `DEFENCETEST_PRIMARY_PORT` | Yes | `-1` | Fixed primary port (typically 8000) |
+| `DEFENCETEST_URL` | Dev: No; Prod: Yes | -- | Public URL (e.g., `https://YOUR_DEFENCETEST_HOST`); may be empty in development for dynamic host/IP |
+| `DEFENCETEST_NN_URL` | No | (unset => request host; empty => same-host) | Base URL workers use to download neural networks (see below) |
+| `DEFENCETEST_AUTHENTICATION_SECRET` | Yes | -- | Cookie signing secret (itsdangerous) |
+| `DEFENCETEST_CAPTCHA_SECRET` | No | -- | reCAPTCHA secret key for signup |
+| `DEFENCETEST_CAPTCHA_SITE_KEY` | No | built-in | reCAPTCHA site key for signup |
+| `DEFENCETEST_INSECURE_DEV` | No | -- | Set to `1` for development mode (insecure secret) |
+| `DEFENCETEST_JINJA_TEMPLATES_DIR` | No | auto | Override Jinja2 templates directory |
 | `OPENAPI_URL` | No | (empty) | Set to `/openapi.json` to enable `/docs` and `/redoc` (development-only) |
 | `UVICORN_WORKERS` | No | -- | Must be `1` on primary (enforced at startup) |
 | `WEB_CONCURRENCY` | No | -- | Fallback for `UVICORN_WORKERS` (checked if unset) |
 
-**Session invalidation**: deploying a new `FISHTEST_AUTHENTICATION_SECRET`
+**Session invalidation**: deploying a new `DEFENCETEST_AUTHENTICATION_SECRET`
 invalidates all existing sessions. Users must re-authenticate once.
 
 ### Primary instance detection
 
-If `FISHTEST_PORT == FISHTEST_PRIMARY_PORT`, the instance is primary. If
+If `DEFENCETEST_PORT == DEFENCETEST_PRIMARY_PORT`, the instance is primary. If
 either value is unset or negative, the instance defaults to primary for
 backward compatibility.
 
@@ -77,14 +77,14 @@ flowchart LR
 Managed via a systemd service template (one unit per port):
 
 ```bash
-sudo systemctl enable fishtest@{8000..8003}
-sudo systemctl start fishtest@{8000..8003}
-sudo journalctl -u fishtest@8000 # useful flags: -f, --since, --until, --no-pager
+sudo systemctl enable defencetest@{8000..8003}
+sudo systemctl start defencetest@{8000..8003}
+sudo journalctl -u defencetest@8000 # useful flags: -f, --since, --until, --no-pager
 ```
 
 ## systemd unit template
 
-File: `/etc/systemd/system/fishtest@.service`
+File: `/etc/systemd/system/defencetest@.service`
 
 Copy the following file as-is. Replace `USER_NAME` with the actual user,
 `SERVER_NAME` with the actual domain, `OPTIONAL_NN_URL` with one of
@@ -99,9 +99,9 @@ secret and the reCAPTCHA secret.
 | (empty) | Server uses same-host relative redirects (`/nn/<id>`) |
 | `https://SERVER_NAME` | Workers download directly from this origin |
 | `https://CDN_HOSTNAME` | Workers download via a CDN in front of this origin |
-| `https://data.stockfishchess.org` | Workers download via the official fishtest CDN |
+| `https://YOUR_CDN_HOST` | Workers download via the official defencetest CDN |
 
-Note: `systemd` `Environment="FISHTEST_NN_URL=..."` always sets the variable.
+Note: `systemd` `Environment="DEFENCETEST_NN_URL=..."` always sets the variable.
 If you want the (unset) behavior, omit that `Environment=` line.
 
 When a `CDN_HOSTNAME` is used, it must also appear in the nginx
@@ -112,32 +112,32 @@ files at the edge.
 
 ```ini
 [Unit]
-Description=Fishtest Server port %i
+Description=DefenceTest Server port %i
 After=network.target mongod.service
 
 [Service]
 Type=simple
 
 Environment="UVICORN_WORKERS=1"
-Environment="FISHTEST_URL=https://SERVER_NAME"
-Environment="FISHTEST_NN_URL=OPTIONAL_NN_URL"
+Environment="DEFENCETEST_URL=https://SERVER_NAME"
+Environment="DEFENCETEST_NN_URL=OPTIONAL_NN_URL"
 # Cookie-session signing secret (required in production).
-# Development-only insecure fallback requires explicit opt-in: Environment="FISHTEST_INSECURE_DEV=1"
-Environment="FISHTEST_AUTHENTICATION_SECRET=CHANGE_ME"
-Environment="FISHTEST_CAPTCHA_SECRET=CHANGE_ME"
+# Development-only insecure fallback requires explicit opt-in: Environment="DEFENCETEST_INSECURE_DEV=1"
+Environment="DEFENCETEST_AUTHENTICATION_SECRET=CHANGE_ME"
+Environment="DEFENCETEST_CAPTCHA_SECRET=CHANGE_ME"
 
 # Port of *this* instance
-Environment="FISHTEST_PORT=%i"
+Environment="DEFENCETEST_PORT=%i"
 # Fixed primary port for the cluster
-Environment="FISHTEST_PRIMARY_PORT=8000"
+Environment="DEFENCETEST_PRIMARY_PORT=8000"
 
-WorkingDirectory=/home/USER_NAME/fishtest/server
+WorkingDirectory=/home/USER_NAME/defencetest/server
 User=USER_NAME
 
 # At 20k workers the primary needs ~15k fds; 32768 provides 2x headroom.
 LimitNOFILE=32768
 
-ExecStart=/home/USER_NAME/fishtest/server/.venv/bin/python -m uvicorn fishtest.app:app --host 127.0.0.1 --port %i --proxy-headers --forwarded-allow-ips=127.0.0.1 --backlog 16384 --log-level warning --workers $UVICORN_WORKERS
+ExecStart=/home/USER_NAME/defencetest/server/.venv/bin/python -m uvicorn defencetest.app:app --host 127.0.0.1 --port %i --proxy-headers --forwarded-allow-ips=127.0.0.1 --backlog 16384 --log-level warning --workers $UVICORN_WORKERS
 Restart=on-failure
 RestartSec=3
 
@@ -152,11 +152,11 @@ Running 3 Uvicorn workers on this port prevents slow uploads from blocking
 fast ones. Create a per-instance drop-in override:
 
 ```bash
-sudo mkdir -p /etc/systemd/system/fishtest@8003.service.d
+sudo mkdir -p /etc/systemd/system/defencetest@8003.service.d
 ```
 
 Create the file
-`/etc/systemd/system/fishtest@8003.service.d/override.conf`:
+`/etc/systemd/system/defencetest@8003.service.d/override.conf`:
 
 ```ini
 [Service]
@@ -167,7 +167,7 @@ Then reload and restart:
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl restart fishtest@{8000..8003}
+sudo systemctl restart defencetest@{8000..8003}
 ```
 
 ### Uvicorn flags
@@ -202,7 +202,7 @@ The nginx setup uses two configuration files:
    hostnames. This prevents certificate leaks when multiple vhosts share
    one IP address.
 
-2. **`/etc/nginx/sites-available/fishtest.conf`** -- the named fishtest
+2. **`/etc/nginx/sites-available/defencetest.conf`** -- the named defencetest
    vhost with upstream routing, static file serving, and reverse proxy.
 
 ### Default server configuration
@@ -258,11 +258,11 @@ absorbs thundering-herd reconnection bursts from large worker fleets.
 
 ### Site configuration
 
-File: `/etc/nginx/sites-available/fishtest.conf`
+File: `/etc/nginx/sites-available/defencetest.conf`
 
 Copy the following file as-is. Replace every occurrence of `SERVER_NAME` with
-the actual domain name (e.g. `tests.stockfishchess.org`) and `CDN_HOSTNAME`
-with the Cloudflare-proxied CDN hostname (e.g. `data.stockfishchess.org`).
+the actual domain name (e.g. `YOUR_DEFENCETEST_HOST`) and `CDN_HOSTNAME`
+with the Cloudflare-proxied CDN hostname (e.g. `YOUR_CDN_HOST`).
 Omit `CDN_HOSTNAME` from the `server_name` directive if no CDN is used.
 Adjust Let's Encrypt certificate paths if needed.
 
@@ -334,19 +334,19 @@ server {
     location = /tests/  { return 308 /tests; }
 
     location = /robots.txt {
-        alias       /var/www/fishtest/static/robots.txt;
+        alias       /var/www/defencetest/static/robots.txt;
         access_log  off;
     }
 
     location = /favicon.ico {
-        alias       /var/www/fishtest/static/favicon.ico;
+        alias       /var/www/defencetest/static/favicon.ico;
         access_log  off;
         expires     1y;
         add_header  Cache-Control "public, max-age=31536000, immutable";
     }
 
     location ^~ /static/ {
-        alias       /var/www/fishtest/static/;
+        alias       /var/www/defencetest/static/;
         try_files   $uri =404;
         access_log  off;
         etag        on;
@@ -355,7 +355,7 @@ server {
     }
 
     location /nn/ {
-        root         /var/www/fishtest;
+        root         /var/www/defencetest;
         gzip_static  always;
         gunzip       on;
     }
@@ -422,21 +422,21 @@ Origin CA), which is outside the scope of this server configuration.
 
 ### Maintenance mode configuration
 
-File: `/etc/nginx/sites-available/fishtest-maintenance.conf`
+File: `/etc/nginx/sites-available/defencetest-maintenance.conf`
 
 During planned maintenance (major upgrades, database migrations), swap the
 active site symlink so that all requests receive a friendly 503 maintenance
 page while static assets (logos, icons) remain available. The procedure:
 
 ```bash
-sudo ln -sfn /etc/nginx/sites-available/fishtest-maintenance.conf /etc/nginx/sites-enabled/fishtest.conf
+sudo ln -sfn /etc/nginx/sites-available/defencetest-maintenance.conf /etc/nginx/sites-enabled/defencetest.conf
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
 To restore normal operation:
 
 ```bash
-sudo ln -sfn /etc/nginx/sites-available/fishtest.conf /etc/nginx/sites-enabled/fishtest.conf
+sudo ln -sfn /etc/nginx/sites-available/defencetest.conf /etc/nginx/sites-enabled/defencetest.conf
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
@@ -468,7 +468,7 @@ server {
 
     # Static assets remain available during maintenance
     location ^~ /img/ {
-        root        /var/www/fishtest/static;
+        root        /var/www/defencetest/static;
         try_files   $uri =404;
         access_log  off;
         expires     1y;
@@ -476,7 +476,7 @@ server {
     }
 
     location ^~ /static/ {
-        alias       /var/www/fishtest/static/;
+        alias       /var/www/defencetest/static/;
         try_files   $uri =404;
         access_log  off;
         expires     1y;
@@ -484,14 +484,14 @@ server {
     }
 
     location = /favicon.ico {
-        alias       /var/www/fishtest/static/favicon.ico;
+        alias       /var/www/defencetest/static/favicon.ico;
         access_log  off;
         expires     1y;
         add_header  Cache-Control "public, max-age=31536000, immutable";
     }
 
     location = /robots.txt {
-        alias       /var/www/fishtest/static/robots.txt;
+        alias       /var/www/defencetest/static/robots.txt;
         access_log  off;
     }
 
@@ -503,7 +503,7 @@ server {
     }
 
     location @maintenance {
-        root            /var/www/fishtest/static/html;
+        root            /var/www/defencetest/static/html;
         rewrite ^(.*)$  /maintenance.html break;
     }
 }
@@ -591,10 +591,10 @@ backends rather than accumulating stale connections:
 ## Kernel tuning (sysctl)
 
 For the 20,000-worker target, verify the following `sysctl` values.
-Add to `/etc/sysctl.d/99-fishtest.conf` if needed:
+Add to `/etc/sysctl.d/99-defencetest.conf` if needed:
 
 ```ini
-# fishtest production tuning (target: 20,000 workers)
+# defencetest production tuning (target: 20,000 workers)
 
 # must be >= uvicorn --backlog (16384); 32768 absorbs thundering-herd reconnections
 net.core.somaxconn = 32768
@@ -630,7 +630,7 @@ USER_NAME user inherits the same file-descriptor ceiling:
 sudo mkdir -p /etc/security/limits.d
 ```
 
-File: `/etc/security/limits.d/99-fishtest.conf`
+File: `/etc/security/limits.d/99-defencetest.conf`
 
 ```ini
 # interactive fd ceiling for the USER_NAME user.
@@ -646,7 +646,7 @@ limits are correctly sized for the 20,000-worker target:
 
 ```bash
 #!/usr/bin/env bash
-# fishtest capacity audit -- verify system tuning for the 20,000-worker target.
+# defencetest capacity audit -- verify system tuning for the 20,000-worker target.
 # Run on the production host after applying sysctl, nginx, and systemd settings.
 
 set -euo pipefail
@@ -664,7 +664,7 @@ pass() { echo "${grn}pass${rst} ($1)"; }
 warn() { echo "${ylw}WARN${rst} ($1)"; }
 fail() { echo "${red}FAIL${rst} ($1)"; }
 
-echo "fishtest capacity audit (target: ${target} workers)"
+echo "defencetest capacity audit (target: ${target} workers)"
 echo "----------------------------------------------------"
 
 # kernel: somaxconn must be >= uvicorn --backlog

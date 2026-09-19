@@ -9,14 +9,14 @@ from unittest import mock
 import test_support
 from starlette.responses import Response
 
-from fishtest.api import WORKER_API_PATHS
-from fishtest.app import _require_single_worker_on_primary
-from fishtest.http import cookie_session, jinja
-from fishtest.http.errors import _WORKER_API_PATHS
-from fishtest.http.middleware import _get_blocked_cached
-from fishtest.http.settings import AppSettings
-from fishtest.http.template_helpers import build_tasks_rows, tests_run_setup
-from fishtest.http.ui_pipeline import apply_http_cache
+from defencetest.api import WORKER_API_PATHS
+from defencetest.app import _require_single_worker_on_primary
+from defencetest.http import cookie_session, jinja
+from defencetest.http.errors import _WORKER_API_PATHS
+from defencetest.http.middleware import _get_blocked_cached
+from defencetest.http.settings import AppSettings
+from defencetest.http.template_helpers import build_tasks_rows, tests_run_setup
+from defencetest.http.ui_pipeline import apply_http_cache
 
 
 class TemplateRequestStaticUrlTests(unittest.TestCase):
@@ -32,7 +32,7 @@ class TemplateRequestStaticUrlTests(unittest.TestCase):
             jinja._STATIC_DIR = static_dir
             jinja._static_file_token.cache_clear()
             try:
-                url = jinja.static_url("fishtest:static/../secret.txt")
+                url = jinja.static_url("defencetest:static/../secret.txt")
                 self.assertTrue(url.startswith("/static/"))
                 self.assertNotIn("?x=", url)
             finally:
@@ -75,7 +75,7 @@ class MetaExtractionTests(unittest.TestCase):
             jinja._STATIC_DIR = static_dir
             jinja._static_file_token.cache_clear()
             try:
-                url = jinja.static_url("fishtest:static/css/site.css")
+                url = jinja.static_url("defencetest:static/css/site.css")
                 self.assertIn("?x=", url)
                 token = url.split("?x=", 1)[1]
                 self.assertRegex(token, r"^[A-Za-z0-9_-]+$")
@@ -128,18 +128,18 @@ class CookieSessionTests(unittest.TestCase):
     def test_session_middleware_trims_flashes(self):
         with mock.patch.dict(
             os.environ,
-            {"FISHTEST_AUTHENTICATION_SECRET": "test-secret"},
+            {"DEFENCETEST_AUTHENTICATION_SECRET": "test-secret"},
             clear=True,
         ):
             _FastAPI, TestClient = test_support.require_fastapi()
             app = _FastAPI()
 
-            from fishtest.http.cookie_session import load_session
-            from fishtest.http.session_middleware import FishtestSessionMiddleware
-            from fishtest.http.settings import SESSION_COOKIE_VALUE_MAX_BYTES
+            from defencetest.http.cookie_session import load_session
+            from defencetest.http.session_middleware import DefenceTestSessionMiddleware
+            from defencetest.http.settings import SESSION_COOKIE_VALUE_MAX_BYTES
 
             app.add_middleware(
-                FishtestSessionMiddleware,
+                DefenceTestSessionMiddleware,
                 secret_key=cookie_session.session_secret_key,
                 session_cookie=cookie_session.SESSION_COOKIE_NAME,
                 max_age=None,
@@ -161,7 +161,7 @@ class CookieSessionTests(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             set_cookie = response.headers.get("set-cookie")
             self.assertIsNotNone(set_cookie)
-            cookie_value = set_cookie.split("fishtest_session=", 1)[1].split(
+            cookie_value = set_cookie.split("defencetest_session=", 1)[1].split(
                 ";",
                 1,
             )[0]
@@ -178,14 +178,14 @@ class SettingsTests(unittest.TestCase):
         self.assertTrue(settings.is_primary_instance)
 
     def test_primary_when_primary_port_unknown(self):
-        with mock.patch.dict(os.environ, {"FISHTEST_PORT": "8000"}, clear=True):
+        with mock.patch.dict(os.environ, {"DEFENCETEST_PORT": "8000"}, clear=True):
             settings = AppSettings.from_env()
         self.assertTrue(settings.is_primary_instance)
 
     def test_primary_when_ports_match(self):
         with mock.patch.dict(
             os.environ,
-            {"FISHTEST_PORT": "8000", "FISHTEST_PRIMARY_PORT": "8000"},
+            {"DEFENCETEST_PORT": "8000", "DEFENCETEST_PRIMARY_PORT": "8000"},
             clear=True,
         ):
             settings = AppSettings.from_env()
@@ -194,7 +194,7 @@ class SettingsTests(unittest.TestCase):
     def test_secondary_when_ports_differ(self):
         with mock.patch.dict(
             os.environ,
-            {"FISHTEST_PORT": "8001", "FISHTEST_PRIMARY_PORT": "8000"},
+            {"DEFENCETEST_PORT": "8001", "DEFENCETEST_PRIMARY_PORT": "8000"},
             clear=True,
         ):
             settings = AppSettings.from_env()
@@ -265,7 +265,7 @@ class BlockedUserCacheTests(unittest.TestCase):
         cache_obj.value = value
 
     def test_blocked_cache_uses_ttl(self):
-        from fishtest.http.middleware import _blocked_cache
+        from defencetest.http.middleware import _blocked_cache
 
         original_timestamp = _blocked_cache.timestamp
         original_value = _blocked_cache.value

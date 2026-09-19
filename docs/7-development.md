@@ -26,13 +26,13 @@ This installs all runtime and test dependencies into a virtual environment at
 
 ```bash
 cd server
-FISHTEST_INSECURE_DEV=1 uv run uvicorn fishtest.app:app --reload --port 8000
+DEFENCETEST_INSECURE_DEV=1 uv run uvicorn defencetest.app:app --reload --port 8000
 ```
 
 No concurrency flags are needed in development. The async event loop handles
 concurrent requests natively.
 
-Setting `FISHTEST_INSECURE_DEV=1` enables an insecure fallback secret key
+Setting `DEFENCETEST_INSECURE_DEV=1` enables an insecure fallback secret key
 for cookie signing. This must never be used in production.
 
 ### Running the worker with the development server
@@ -54,7 +54,7 @@ To enable the interactive OpenAPI docs (`/docs`, `/redoc`, `/openapi.json`)
 during development:
 
 ```bash
-OPENAPI_URL=/openapi.json FISHTEST_INSECURE_DEV=1 uv run uvicorn fishtest.app:app --reload --port 8000
+OPENAPI_URL=/openapi.json DEFENCETEST_INSECURE_DEV=1 uv run uvicorn defencetest.app:app --reload --port 8000
 ```
 
 OpenAPI docs are disabled in production (`openapi_url` defaults to `None`,
@@ -69,13 +69,13 @@ The following subset is relevant during development:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `FISHTEST_INSECURE_DEV` | -- | Set to `1` to use insecure fallback signing secret |
+| `DEFENCETEST_INSECURE_DEV` | -- | Set to `1` to use insecure fallback signing secret |
 | `OPENAPI_URL` | (empty) | Set to `/openapi.json` to enable `/docs` and `/redoc` |
-| `FISHTEST_PORT` | `-1` | Defaults to primary when unset |
-| `FISHTEST_PRIMARY_PORT` | `-1` | Defaults to primary when unset |
-| `FISHTEST_JINJA_TEMPLATES_DIR` | auto | Override Jinja2 templates directory |
+| `DEFENCETEST_PORT` | `-1` | Defaults to primary when unset |
+| `DEFENCETEST_PRIMARY_PORT` | `-1` | Defaults to primary when unset |
+| `DEFENCETEST_JINJA_TEMPLATES_DIR` | auto | Override Jinja2 templates directory |
 
-When `FISHTEST_PORT` and `FISHTEST_PRIMARY_PORT` are both unset or negative,
+When `DEFENCETEST_PORT` and `DEFENCETEST_PRIMARY_PORT` are both unset or negative,
 the instance defaults to primary -- the expected mode for single-instance
 development.
 
@@ -112,7 +112,7 @@ Use vtjson for all server-side validation.
 
 Core rules:
 
-- Define persisted document schemas in `server/fishtest/schemas.py`.
+- Define persisted document schemas in `server/defencetest/schemas.py`.
 - Treat persisted vtjson schemas as both documentation and the final server-side
     gate for stored data.
 - Keep vtjson as the only server-side data validation layer. Do not introduce
@@ -141,10 +141,10 @@ Boundary split pattern:
 For local multi-instance testing with nginx, use the development-only HTTP
 config below. This mirrors the production routing topology without TLS and
 works on local VMs where the IP may change between boots. Leave
-`FISHTEST_URL` and `FISHTEST_NN_URL` empty in the systemd units to allow
+`DEFENCETEST_URL` and `DEFENCETEST_NN_URL` empty in the systemd units to allow
 dynamic host/IP usage.
 
-File: `/etc/nginx/sites-available/fishtest.conf`
+File: `/etc/nginx/sites-available/defencetest.conf`
 
 ```nginx
 upstream backend_8000 {
@@ -203,19 +203,19 @@ server {
     location = /tests/  { return 308 /tests; }
 
     location = /robots.txt {
-        alias       /var/www/fishtest/static/robots.txt;
+        alias       /var/www/defencetest/static/robots.txt;
         access_log  off;
     }
 
     location = /favicon.ico {
-        alias       /var/www/fishtest/static/favicon.ico;
+        alias       /var/www/defencetest/static/favicon.ico;
         access_log  off;
         expires     1y;
         add_header  Cache-Control "public, max-age=31536000, immutable";
     }
 
     location ^~ /static/ {
-        alias       /var/www/fishtest/static/;
+        alias       /var/www/defencetest/static/;
         try_files   $uri =404;
         access_log  off;
         etag        on;
@@ -224,7 +224,7 @@ server {
     }
 
     location /nn/ {
-        root         /var/www/fishtest;
+        root         /var/www/defencetest;
         gzip_static  always;
         gunzip       on;
     }

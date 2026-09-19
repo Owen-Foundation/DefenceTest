@@ -5,8 +5,8 @@ from bson.objectid import ObjectId
 
 if __name__ == "__main__":
     client = pymongo.MongoClient()
-    actions_collection = client["fishtest_new"]["actions"]
-    runs_collection = client["fishtest_new"]["runs"]
+    actions_collection = client["defencetest_new"]["actions"]
+    runs_collection = client["defencetest_new"]["runs"]
     actions = actions_collection.find({}).sort("_id", 1)
     count = 0
     print("Starting conversion...")

@@ -1,0 +1,27 @@
+{% extends "base.html.j2" %}
+
+{% block title %}Neural Network Repository | DefenceTest{% endblock %}
+
+{% block body %}
+{% set filter_source = filters if filters is defined else {} %}
+{% if filter_source is mapping %}
+  {% set network_name_filter = filter_source.get('network_name', '') %}
+  {% set user_filter = filter_source.get('user', '') %}
+  {% set master_only = filter_source.get('master_only', False) %}
+{% else %}
+  {% set network_name_filter = filter_source.network_name %}
+  {% set user_filter = filter_source.user %}
+  {% set master_only = filter_source.master_only %}
+{% endif %}
+{% set view = view if view is defined else 'paged' %}
+{% set sort = sort if sort is defined else 'time' %}
+{% set order = order if order is defined else 'desc' %}
+{% set num_nns = num_nns if num_nns is defined else 0 %}
+{% set max_all = max_all if max_all is defined else 5000 %}
+{% set is_truncated = is_truncated if is_truncated is defined else false %}
+<h2>Neural Network Repository</h2>
+
+<div id="nns-content">
+  {% include "nns_content_fragment.html.j2" %}
+</div>
+{% endblock %}
