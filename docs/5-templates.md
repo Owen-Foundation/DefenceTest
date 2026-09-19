@@ -530,7 +530,9 @@ Shared base context only.
 
 | Key | Type |
 |-----|------|
-| `recaptcha_site_key` | string |
+| `captcha_buster` | string |
+
+The captcha image is served by `GET /captcha.svg` (self-hosted, no keys).
 
 ### `sprt_calc.html.j2`
 

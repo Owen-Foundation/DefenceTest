@@ -14,6 +14,7 @@ import hashlib
 import logging
 import os
 import re
+import secrets
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -22,7 +23,6 @@ from urllib.parse import quote, urlencode
 
 import bson
 import regex
-import requests
 from fastapi import APIRouter
 from markupsafe import Markup
 from starlette.concurrency import run_in_threadpool
@@ -31,6 +31,7 @@ from starlette.requests import Request  # noqa: TC002
 from starlette.responses import HTMLResponse, RedirectResponse, Response
 from vtjson import ValidationError, union, validate
 
+import defencetest.captcha as captcha
 import defencetest.github_api as gh
 import defencetest.stats.stat_util
 from defencetest.http.boundary import (
@@ -68,7 +69,6 @@ from defencetest.http.settings import (
     UI_FORM_MAX_FIELDS,
     UI_FORM_MAX_FILES,
     UI_FORM_MAX_PART_SIZE_BYTES,
-    UI_HTTP_TIMEOUT_SECONDS,
     UI_STATE_COOKIE_MAX_AGE_SECONDS,
     USER_MANAGEMENT_MAX_ALL,
     USER_MANAGEMENT_PAGE_SIZE,
@@ -177,11 +177,9 @@ from defencetest.views_run import (
     validate_modify,
 )
 
-HTTP_TIMEOUT = UI_HTTP_TIMEOUT_SECONDS
 FORM_MAX_FILES = UI_FORM_MAX_FILES
 FORM_MAX_FIELDS = UI_FORM_MAX_FIELDS
 FORM_MAX_PART_SIZE = UI_FORM_MAX_PART_SIZE_BYTES
-DEFAULT_RECAPTCHA_SITE_KEY = "6LePs8YUAAAAABMmqHZVyVjxat95Z1c_uHrkugZM"
 
 router = APIRouter(tags=["ui"])
 logger = logging.getLogger(__name__)
@@ -702,12 +700,9 @@ def logout(request: _ViewContext) -> RedirectResponse:
 
 def signup(request: _ViewContext) -> dict[str, Any] | RedirectResponse:  # noqa: C901, PLR0911, PLR0912, PLR0915
     _append_no_store_headers(request)
-    recaptcha_site_key = os.environ.get(
-        "DEFENCETEST_CAPTCHA_SITE_KEY",
-        DEFAULT_RECAPTCHA_SITE_KEY,
-    ).strip()
     signup_context = {
-        "recaptcha_site_key": recaptcha_site_key,
+        # Cache-buster so the browser always fetches a fresh /captcha.svg.
+        "captcha_buster": secrets.token_urlsafe(6),
         "VALID_USERNAME_PATTERN": VALID_USERNAME_PATTERN,
     }
 
@@ -750,39 +745,10 @@ def signup(request: _ViewContext) -> dict[str, Any] | RedirectResponse:  # noqa:
             request.session.flash(error, "error")
         return signup_context
 
-    secret = os.environ.get("DEFENCETEST_CAPTCHA_SECRET", "").strip()
-    captcha_response = _form_string_value(
-        request.POST,
-        "g-recaptcha-response",
-    ).strip()
+    captcha_answer = _form_string_value(request.POST, "captcha").strip()
 
-    if not secret:
-        request.session.flash("Captcha configuration is missing", "error")
-        return signup_context
-
-    if not captcha_response:
-        request.session.flash("Captcha required", "error")
-        return signup_context
-
-    payload = {
-        "secret": secret,
-        "response": captcha_response,
-        "remoteip": request.remote_addr,
-    }
-    try:
-        response = requests.post(
-            "https://www.google.com/recaptcha/api/siteverify",
-            data=payload,
-            timeout=HTTP_TIMEOUT,
-        ).json()
-    except (requests.RequestException, ValueError):
-        request.session.flash("Captcha verification failed", "error")
-        return signup_context
-
-    if "success" not in response or not response["success"]:
-        if "error-codes" in response:
-            logger.warning(response["error-codes"])
-        request.session.flash("Captcha failed", "error")
+    if not captcha.verify(request.session, captcha_answer):
+        request.session.flash("Captcha incorrect — please try again", "error")
         return signup_context
 
     result = request.userdb.create_user(
@@ -805,6 +771,18 @@ def signup(request: _ViewContext) -> dict[str, Any] | RedirectResponse:  # noqa:
         )
         return RedirectResponse(url="/login", status_code=302)
     return signup_context
+
+
+def captcha_image(request: _ViewContext) -> Response:
+    """Serve a fresh self-hosted captcha SVG (public, session-bound)."""
+    _append_no_store_headers(request)
+    code = captcha.issue(request.session)
+    response = Response(
+        captcha.render_svg(code),
+        media_type="image/svg+xml",
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 # === Lists ===
@@ -3743,6 +3721,11 @@ _VIEW_ROUTES: list[_ViewRoute] = [
             "require_csrf": True,
             "request_method": ("GET", "POST"),
         },
+    ),
+    (
+        captcha_image,
+        "/captcha.svg",
+        {"request_method": ("GET",)},
     ),
     (nns, "/nns", {"renderer": "nns.html.j2"}),
     (sprt_calc, "/sprt_calc", {"renderer": "sprt_calc.html.j2"}),

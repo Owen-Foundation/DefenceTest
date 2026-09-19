@@ -113,21 +113,12 @@ class TestUsers(UiUserTestCase):
         self.assertEqual(response.status_code, 200)
         self._assert_no_store_headers(response)
         csrf = test_support.extract_csrf_token(response.text)
-        with (
-            patch.dict(
-                "os.environ",
-                {"DEFENCETEST_CAPTCHA_SECRET": "test-secret"},
-                clear=False,
-            ),
-            patch(
-                "defencetest.views.requests.post",
-                return_value=type(
-                    "_CaptchaResponse",
-                    (),
-                    {"json": staticmethod(lambda: {"success": True})},
-                )(),
-            ),
+        with patch(
+            "defencetest.captcha.new_code",
+            return_value="ABCDE",
         ):
+            svg = self.client.get("/captcha.svg")
+            self.assertEqual(svg.status_code, 200)
             response = self.client.post(
                 "/signup",
                 data={
@@ -136,7 +127,7 @@ class TestUsers(UiUserTestCase):
                     "password2": self.signup_password,
                     "email": "signup-test@user.net",
                     "tests_repo": self.tests_repo,
-                    "g-recaptcha-response": "captcha-ok",
+                    "captcha": "abcde",
                     "csrf_token": csrf,
                 },
                 follow_redirects=False,
@@ -159,21 +150,12 @@ class TestUsers(UiUserTestCase):
         self.assertEqual(response.status_code, 200)
         csrf = test_support.extract_csrf_token(response.text)
 
-        with (
-            patch.dict(
-                "os.environ",
-                {"DEFENCETEST_CAPTCHA_SECRET": "test-secret"},
-                clear=False,
-            ),
-            patch(
-                "defencetest.views.requests.post",
-                return_value=type(
-                    "_CaptchaResponse",
-                    (),
-                    {"json": staticmethod(lambda: {"success": True})},
-                )(),
-            ),
+        with patch(
+            "defencetest.captcha.new_code",
+            return_value="FGHIJ",
         ):
+            svg = self.client.get("/captcha.svg")
+            self.assertEqual(svg.status_code, 200)
             response = self.client.post(
                 "/signup",
                 data={
@@ -182,7 +164,7 @@ class TestUsers(UiUserTestCase):
                     "password2": self.signup_password,
                     "email": "canonical-signup-test@user.net",
                     "tests_repo": self.tests_repo + "/",
-                    "g-recaptcha-response": "captcha-ok",
+                    "captcha": "fghij",
                     "csrf_token": csrf,
                 },
                 follow_redirects=False,

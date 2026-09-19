@@ -2,10 +2,6 @@
 
 {% block title %}Register | DefenceTest{% endblock %}
 
-{% block head %}
-  <script src='https://www.google.com/recaptcha/api.js'></script>
-{% endblock %}
-
 {% block body %}
 <div class="col-limited-size">
   <header class="text-md-center py-2">
@@ -111,11 +107,29 @@
       </div>
     </div>
 
-    <div class="g-recaptcha mb-3" data-sitekey="{{ recaptcha_site_key if recaptcha_site_key is defined else '' }}"></div>
+    <div class="mb-3">
+      <label for="captcha" class="form-label">Captcha — type the 5 characters</label>
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <img id="captcha-img" src="/captcha.svg?x={{ captcha_buster }}" alt="Captcha code" width="170" height="64" class="border rounded" />
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="captcha-reload" title="New code">&#8635; new code</button>
+      </div>
+      <input type="text" name="captcha" id="captcha" class="form-control" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" required />
+    </div>
 
     <button type="submit" class="btn btn-primary w-100">Register</button>
   </form>
 </div>
 
 <script src="{{ static_url('defencetest:static/js/toggle_password.js') }}"></script>
+<script>
+(function () {
+  var btn = document.getElementById("captcha-reload");
+  var img = document.getElementById("captcha-img");
+  if (btn && img) {
+    btn.addEventListener("click", function () {
+      img.src = "/captcha.svg?x=" + Math.random().toString(36).slice(2);
+    });
+  }
+})();
+</script>
 {% endblock %}

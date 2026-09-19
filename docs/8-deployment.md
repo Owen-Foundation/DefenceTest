@@ -18,8 +18,6 @@
 | `DEFENCETEST_URL` | Dev: No; Prod: Yes | -- | Public URL (e.g., `https://YOUR_DEFENCETEST_HOST`); may be empty in development for dynamic host/IP |
 | `DEFENCETEST_NN_URL` | No | (unset => request host; empty => same-host) | Base URL workers use to download neural networks (see below) |
 | `DEFENCETEST_AUTHENTICATION_SECRET` | Yes | -- | Cookie signing secret (itsdangerous) |
-| `DEFENCETEST_CAPTCHA_SECRET` | No | -- | reCAPTCHA secret key for signup |
-| `DEFENCETEST_CAPTCHA_SITE_KEY` | No | built-in | reCAPTCHA site key for signup |
 | `DEFENCETEST_INSECURE_DEV` | No | -- | Set to `1` for development mode (insecure secret) |
 | `DEFENCETEST_JINJA_TEMPLATES_DIR` | No | auto | Override Jinja2 templates directory |
 | `OPENAPI_URL` | No | (empty) | Set to `/openapi.json` to enable `/docs` and `/redoc` (development-only) |
@@ -89,7 +87,8 @@ File: `/etc/systemd/system/defencetest@.service`
 Copy the following file as-is. Replace `USER_NAME` with the actual user,
 `SERVER_NAME` with the actual domain, `OPTIONAL_NN_URL` with one of
 the values below, and `CHANGE_ME` with the production cookie signing
-secret and the reCAPTCHA secret.
+secret. Signup spam protection is a built-in self-hosted captcha
+(`GET /captcha.svg`) — no third-party keys needed.
 
 `OPTIONAL_NN_URL` -- base URL workers use to download neural networks:
 
@@ -124,7 +123,6 @@ Environment="DEFENCETEST_NN_URL=OPTIONAL_NN_URL"
 # Cookie-session signing secret (required in production).
 # Development-only insecure fallback requires explicit opt-in: Environment="DEFENCETEST_INSECURE_DEV=1"
 Environment="DEFENCETEST_AUTHENTICATION_SECRET=CHANGE_ME"
-Environment="DEFENCETEST_CAPTCHA_SECRET=CHANGE_ME"
 
 # Port of *this* instance
 Environment="DEFENCETEST_PORT=%i"
