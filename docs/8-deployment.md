@@ -18,6 +18,7 @@
 | `DEFENCETEST_URL` | Dev: No; Prod: Yes | -- | Public URL (e.g., `https://YOUR_DEFENCETEST_HOST`); may be empty in development for dynamic host/IP |
 | `DEFENCETEST_NN_URL` | No | (unset => request host; empty => same-host) | Base URL workers use to download neural networks (see below) |
 | `DEFENCETEST_AUTHENTICATION_SECRET` | Yes | -- | Cookie signing secret (itsdangerous) |
+| `DEFENCETEST_NN_DIR` | No | `/var/www/defencetest/nn` | Directory of `<net>.gz` files served raw by `GET /nn/{name}` |
 | `DEFENCETEST_INSECURE_DEV` | No | -- | Set to `1` for development mode (insecure secret) |
 | `DEFENCETEST_JINJA_TEMPLATES_DIR` | No | auto | Override Jinja2 templates directory |
 | `OPENAPI_URL` | No | (empty) | Set to `/openapi.json` to enable `/docs` and `/redoc` (development-only) |
@@ -79,6 +80,24 @@ sudo systemctl enable defencetest@{8000..8003}
 sudo systemctl start defencetest@{8000..8003}
 sudo journalctl -u defencetest@8000 # useful flags: -f, --since, --until, --no-pager
 ```
+
+## Contributor statistics timer
+
+The Contributors leaderboard (`user_cache`) is rebuilt by
+`server/utils/delta_update_users.py` — it is NOT updated inline. Run it on
+a timer or contributor names never appear:
+
+```ini
+# /etc/systemd/system/defencetest-stats.service (Type=oneshot):
+# ExecStart=<venv>/bin/python utils/delta_update_users.py (User=..., WorkingDirectory=<server>/)
+# /etc/systemd/system/defencetest-stats.timer:
+# OnBootSec=5min, OnUnitActiveSec=15min, Persistent=true
+```
+
+Only accepted games credit contributors (`wins + losses + draws` from
+tasks with validated stats, attributed to the worker's login username).
+Rejected submissions, crashes and time-losses never count. The same script
+also prunes accounts older than ~a month that never contributed.
 
 ## systemd unit template
 
