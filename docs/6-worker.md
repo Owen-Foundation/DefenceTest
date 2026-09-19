@@ -26,6 +26,21 @@ Owen homepage. Note: while the server is exposed via a Cloudflare quick
 tunnel, its hostname changes on tunnel restart — always copy the host shown
 on the homepage (or ask the maintainer) before launching a worker.
 
+## Supported platforms
+
+The worker runs on **Linux, macOS and Windows**, on **x86_64 and ARM64** —
+there is no architecture-specific code. Requirements per machine:
+
+- Python 3.8+, `make`, `cmake`, and `g++` or `clang++` in `PATH`
+  (Ubuntu: `sudo apt install build-essential cmake`;
+  macOS incl. Tahoe: Xcode Command Line Tools, `xcode-select --install`;
+  Windows: msys2/mingw-w64 or LLVM clang++)
+- The engine health check is a depth-1 bench (~1 s on any CPU), so even
+  slow machines stay in the pool instead of being stuck in rebuild loops.
+- Reported `worker_arch` is normalized to `x86_64` / `arm64`; run creators
+  use those tokens in `arch_filter` (microarchitecture levels from the old
+  Stockfish script are gone).
+
 Source files:
 
 | File | Purpose |

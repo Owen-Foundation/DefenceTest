@@ -1187,11 +1187,13 @@ def get_exception(files):
 
 
 def get_worker_arch(worker_dir):
-    # The server does not consume this field; report the local CPU
-    # architecture directly instead of downloading a detection script
-    # (which 404s and slows down every worker start).
+    # The server matches this against a run's arch_filter regex, so report
+    # a normalized ISA name on every OS/CPU: x86_64 (incl. Windows AMD64),
+    # arm64 (incl. Linux aarch64), or the raw platform.machine() fallback.
+    # (The server ignores anything else about the host.)
     del worker_dir  # unused, kept for the call signature
-    arch = platform.machine()
+    machine = platform.machine().lower()
+    arch = {"amd64": "x86_64", "aarch64": "arm64"}.get(machine, machine)
     print(f"Worker arch determined to be: {arch}")
     return arch
 

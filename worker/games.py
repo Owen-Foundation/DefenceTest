@@ -797,20 +797,23 @@ def create_environment():
     # OS and TEMP are necessary for msys2
     white_set = {"PATH", "OS", "TEMP"}
     env = {k: v for k, v in os.environ.items() if k in white_set}
-    env["CXXFLAGS"] = "-DNNUE_EMBEDDING_OFF"
 
     # Do not hash directories such as PATH and TEMP
-    hash_set = {"OS", "CXXFLAGS"}
+    hash_set = {"OS"}
     hashed_env = {k: v for k, v in env.items() if k in hash_set}
 
     env_hash = hashlib.sha256(str(hashed_env).encode()).hexdigest()[0:10]
     return env, env_hash
 
 
-def engine_is_healthy(path: Path, timeout_s: float = 5.0):
+def engine_is_healthy(path: Path, timeout_s: float = 60.0):
+    # Fast liveness probe, identical on every CPU/OS: a depth-1 bench
+    # proves the binary executes and its embedded net loads. (Never run a
+    # deep bench here: on slow machines it exceeds any sane timeout and
+    # healthy engines would be deleted and rebuilt in a loop.)
     try:
         r = subprocess.run(
-            [str(path), "bench", "16", "1", "5", "default", "depth"],
+            [str(path), "bench", "1"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             check=False,
