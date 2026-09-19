@@ -336,8 +336,17 @@ def verify_credentials(remote, username, password, cached):
                 remote + "/api/request_version", payload, quiet=True
             )
         except Exception:
+            print(
+                f"Cannot reach {remote} — check --host/--port, "
+                "your network, and that the server is online."
+            )
             return None  # network problem (unrecoverable)
         if "error" in req:
+            print(
+                "Server rejected these credentials. Create an account on "
+                "the DefenceTest server first (its /signup page), then use "
+                "that same username and password here."
+            )
             return False  # invalid username/password
         print("Credentials ok!")
         return True
@@ -347,6 +356,13 @@ def verify_credentials(remote, username, password, cached):
 def get_credentials(config, options, args):
     remote = f"{options.protocol}://{options.host}:{options.port}"
     print(f"Worker version {WORKER_VERSION} connecting to {remote}.")
+    if options.host in ("localhost", "127.0.0.1"):
+        print(
+            "NOTE: connecting to localhost. If you meant the public "
+            "DefenceTest server, restart with e.g.\n"
+            "  python worker.py USERNAME PASSWORD --host <server-host> --port 443\n"
+            "or set the DEFENCETEST_HOST environment variable."
+        )
 
     username = config.get("login", "username")
     password = config.get("login", "password", raw=True)
