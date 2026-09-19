@@ -15,7 +15,8 @@ from defencetest.http import cookie_session, jinja
 from defencetest.http.errors import _WORKER_API_PATHS
 from defencetest.http.middleware import _get_blocked_cached
 from defencetest.http.settings import AppSettings
-from defencetest.http.template_helpers import build_tasks_rows, tests_run_setup
+from defencetest.http.template_helpers import build_tasks_rows
+from defencetest.http.template_helpers import tests_run_setup as run_setup
 from defencetest.http.ui_pipeline import apply_http_cache
 
 
@@ -204,7 +205,7 @@ class SettingsTests(unittest.TestCase):
 class TestsRunSetupRobustnessTests(unittest.TestCase):
     def test_does_not_crash_when_master_info_missing(self):
         pt_info = {"pt_version": "PT", "pt_branch": "master", "pt_bench": "123456"}
-        setup = tests_run_setup(
+        setup = run_setup(
             args={}, master_info=None, pt_info=pt_info, test_book="b.epd"
         )
         self.assertEqual(setup["base_branch"], "master")
@@ -212,7 +213,7 @@ class TestsRunSetupRobustnessTests(unittest.TestCase):
 
     def test_does_not_crash_when_master_info_bench_none(self):
         pt_info = {"pt_version": "PT", "pt_branch": "master", "pt_bench": "123456"}
-        setup = tests_run_setup(
+        setup = run_setup(
             args={},
             master_info={"bench": None},
             pt_info=pt_info,
@@ -222,7 +223,7 @@ class TestsRunSetupRobustnessTests(unittest.TestCase):
         self.assertIsNone(setup["latest_bench"])
 
     def test_does_not_crash_when_pt_info_missing(self):
-        setup = tests_run_setup(
+        setup = run_setup(
             args={"base_signature": "789012"},
             master_info={"bench": "123456"},
             pt_info=None,

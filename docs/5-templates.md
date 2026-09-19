@@ -532,7 +532,7 @@ Shared base context only.
 |-----|------|
 | `captcha_buster` | string |
 
-The captcha image is served by `GET /captcha.svg` (self-hosted, no keys).
+The captcha image is served by `GET /captcha.png` (self-hosted, no keys).
 
 ### `sprt_calc.html.j2`
 

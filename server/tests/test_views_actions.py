@@ -449,7 +449,7 @@ class TestActionsViews(unittest.TestCase):
                 response.text,
                 property_name="og:title",
             ),
-            "failed_task on h23-actions-run-abcdef0/7 | Owen Testing",
+            "failed_task on h23-actions-run-abcdef0/7 | DefenceTest",
         )
         self.assertEqual(
             unescape(

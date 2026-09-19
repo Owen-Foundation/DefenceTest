@@ -7,9 +7,9 @@
   <header class="text-md-center py-2">
     <h2>Register</h2>
     <div class="alert alert-info">
-      <h4 class="alert-heading">Manual Approvals</h4>
-      <p class="mb-0">To avoid spam, a person will manually approve your account.</p>
-      <p class="mb-0">This is usually quick but <strong>sometimes takes a few hours</strong>.</p>
+      <h4 class="alert-heading">Instant access</h4>
+      <p class="mb-0">Accounts are approved automatically — you can log in and run a worker right away.</p>
+      <p class="mb-0">Your first test runs need one manual approval; after <strong>500 contributed games</strong> your runs start automatically.</p>
       <hr />
       <p class="mb-0">Already have an account? <strong><a href="/login" class="alert-link">Log in</a></strong></p>
     </div>
@@ -108,9 +108,9 @@
     </div>
 
     <div class="mb-3">
-      <label for="captcha" class="form-label">Captcha — type the 5 characters</label>
+      <label for="captcha" class="form-label">Captcha — type the 6 characters</label>
       <div class="d-flex align-items-center gap-2 mb-2">
-        <img id="captcha-img" src="/captcha.svg?x={{ captcha_buster }}" alt="Captcha code" width="170" height="64" class="border rounded" />
+        <img id="captcha-img" src="/captcha.png?x={{ captcha_buster }}" alt="Captcha code" width="200" height="72" class="border rounded" />
         <button type="button" class="btn btn-sm btn-outline-secondary" id="captcha-reload" title="New code">&#8635; new code</button>
       </div>
       <input type="text" name="captcha" id="captcha" class="form-control" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" required />
@@ -127,7 +127,7 @@
   var img = document.getElementById("captcha-img");
   if (btn && img) {
     btn.addEventListener("click", function () {
-      img.src = "/captcha.svg?x=" + Math.random().toString(36).slice(2);
+      img.src = "/captcha.png?x=" + Math.random().toString(36).slice(2);
     });
   }
 })();

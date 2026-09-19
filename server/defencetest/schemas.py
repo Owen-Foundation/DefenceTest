@@ -130,6 +130,7 @@ user_schema = {
     "groups": intersect([str, ...], unique),
     "tests_repo": union(github_repo, ""),
     "machine_limit": uint,
+    "games_played?": uint,
 }
 
 kvstore_schema = {

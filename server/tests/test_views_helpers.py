@@ -7,7 +7,7 @@ detection, username matching, and heap-based merge behavior.
 import unittest
 from datetime import UTC, datetime
 
-from defencetest.util import tests_repo
+from defencetest.util import tests_repo as repo_of_run
 from defencetest.views_helpers import (
     _build_query_string,
     _clamp_page_index,
@@ -283,7 +283,7 @@ class TestsRepoHelperTests(unittest.TestCase):
         }
 
         self.assertEqual(
-            tests_repo(run),
+            repo_of_run(run),
             "https://github.com/Owen-Foundation/Owen",
         )
 
@@ -291,7 +291,7 @@ class TestsRepoHelperTests(unittest.TestCase):
         run = {"args": {"tests_repo": ""}}
 
         self.assertEqual(
-            tests_repo(run),
+            repo_of_run(run),
             "https://github.com/Owen-Foundation/Owen",
         )
 

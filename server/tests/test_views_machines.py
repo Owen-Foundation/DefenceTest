@@ -13,7 +13,7 @@ from defencetest.views_machines import (
     _machine_filter_state,
     _normalize_machine_row,
     _workers_count_label,
-    tests_machines,
+    tests_machines as machines_page_view,
 )
 
 BASE_TIME = datetime(2026, 3, 17, tzinfo=UTC)
@@ -165,7 +165,7 @@ class TestsMachinesEntryPointTests(unittest.TestCase):
             params={"sort": "machine", "page": str(TARGET_PAGE_NUMBER)},
         )
 
-        result = tests_machines(request)
+        result = machines_page_view(request)
 
         self.assertEqual(result["current_page"], TARGET_PAGE_NUMBER)
         self.assertEqual(len(result["machines"]), EXTRA_MACHINE_COUNT)

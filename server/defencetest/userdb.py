@@ -126,6 +126,19 @@ class UserDb:
         self.users.replace_one({"_id": user["_id"]}, user)
         self.clear_cache()
 
+    def record_games(self, username, num_games):
+        """Credit contributed games to a worker's account (reputation).
+
+        Used for automatic run approval. Plain $inc: no validation needed,
+        works for legacy docs missing the field.
+        """
+        if not username or not isinstance(num_games, int) or num_games <= 0:
+            return
+        self.users.update_one(
+            {"username": username}, {"$inc": {"games_played": num_games}}
+        )
+        self.clear_cache()
+
     def create_user(self, username, password, email, tests_repo):
         try:
             if self.find_by_username(username) or self.find_by_email(email):
@@ -135,12 +148,17 @@ class UserDb:
                 "username": username,
                 "password": password,
                 "registration_time": datetime.now(UTC),
-                "pending": True,
+                # Accounts are approved automatically: the captcha, strong
+                # password and deliverable-email gates stop bots, manual
+                # approval remains available as a moderation tool, and new
+                # contributors' *runs* still need approval (see rundb).
+                "pending": False,
                 "blocked": False,
                 "email": email,
                 "groups": [],
                 "tests_repo": gh.canonicalize_repo_url(tests_repo),
                 "machine_limit": DEFAULT_MACHINE_LIMIT,
+                "games_played": 0,
             }
             validate_user(user)
             self.users.insert_one(user)

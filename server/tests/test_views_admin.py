@@ -222,6 +222,12 @@ class TestAdminViews(UiUserTestCase):
                 f"h19-{idx}@example.com",
                 self.tests_repo,
             )
+            # Accounts are approved automatically; the pending-group view
+            # under test needs manually-pended users.
+            self.rundb.userdb.users.update_one(
+                {"username": username}, {"$set": {"pending": True}}
+            )
+        self.rundb.userdb.clear_cache()
 
         try:
             self._login_user()
@@ -334,6 +340,12 @@ class TestAdminViews(UiUserTestCase):
             "pending-nav@example.com",
             self.tests_repo,
         )
+        # New accounts are approved automatically; simulate the manual
+        # moderation path to get a pending user for the nav fragment.
+        self.rundb.userdb.users.update_one(
+            {"username": pending_username}, {"$set": {"pending": True}}
+        )
+        self.rundb.userdb.clear_cache()
 
         try:
             expected_count = len(self.rundb.userdb.get_pending())

@@ -63,6 +63,12 @@ from defencetest.util import (
 )
 from defencetest.workerdb import WorkerDb
 
+# Automatic run approval: runs by approvers, and by contributors who have
+# played at least this many games through workers, start immediately.
+# Everyone else's runs wait for manual approval. This keeps the queue
+# moving when no approver is around, while drive-by spam still stalls.
+AUTO_APPROVE_GAMES = 500
+
 _UNFINISHED_RUNS_LIGHTWEIGHT_PROJECTION = {
     "_id": 1,
     "tasks": 0,
@@ -554,6 +560,17 @@ class RunDb:
         self.update_nps_gpm()
         self.update_books()
 
+    def _should_auto_approve(self, username):
+        """Whether a new run by this author may start without manual approval."""
+        if not username:
+            return False
+        user = self.userdb.get_user(username)
+        if user is None:
+            return False
+        if "group:approvers" in user.get("groups", []):
+            return True
+        return user.get("games_played", 0) >= AUTO_APPROVE_GAMES
+
     def new_run(
         self,
         base_tag,
@@ -711,6 +728,10 @@ class RunDb:
             message = f"The new run object does not validate: {str(e)}"
             print(message, flush=True)
             raise Exception(message)
+
+        if self._should_auto_approve(new_run["args"].get("username", "")):
+            new_run["approved"] = True
+            new_run["approver"] = "auto"
 
         self.buffer(new_run, priority=Prio.SAVE_NOW, create=True)
 
@@ -1841,6 +1862,12 @@ After fixing the issues you can unblock the worker at
         if "sprt" in run["args"]:
             sprt = run["args"]["sprt"]
             defencetest.stats.stat_util.update_SPRT(run["results"], sprt)
+
+        # Credit the contributor: new games played by this worker count
+        # towards automatic run approval (see new_run).
+        new_games = num_games - old_num_games
+        if new_games > 0:
+            self.userdb.record_games(worker_info.get("username", ""), new_games)
 
         # Stop the run if finished.
 

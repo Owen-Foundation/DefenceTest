@@ -106,8 +106,8 @@ class TestTestsViewDetail(unittest.TestCase):
             msg_new="New",
             base_signature="123456",
             new_signature="654321",
-            base_nets=["nn-0000000000a0.nnue"],
-            new_nets=["nn-0000000000a0.nnue"],
+            base_nets=["nn-0000000000a0.o2nn"],
+            new_nets=["nn-0000000000a0.o2nn"],
             rescheduled_from="653db116cc309ae839563103",
             tests_repo="https://github.com/Owen-Foundation/Owen",
             auto_purge=False,
@@ -212,7 +212,7 @@ class TestTestsViewDetail(unittest.TestCase):
                 response.text,
                 property_name="og:title",
             ),
-            "400 games - master vs master | Owen Testing",
+            "400 games - master vs master | DefenceTest",
         )
         self.assertEqual(
             test_support.extract_meta_content(

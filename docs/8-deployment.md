@@ -88,7 +88,7 @@ Copy the following file as-is. Replace `USER_NAME` with the actual user,
 `SERVER_NAME` with the actual domain, `OPTIONAL_NN_URL` with one of
 the values below, and `CHANGE_ME` with the production cookie signing
 secret. Signup spam protection is a built-in self-hosted captcha
-(`GET /captcha.svg`) — no third-party keys needed.
+(`GET /captcha.png`) — no third-party keys needed.
 
 `OPTIONAL_NN_URL` -- base URL workers use to download neural networks:
 

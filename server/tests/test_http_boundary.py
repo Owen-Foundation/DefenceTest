@@ -80,8 +80,8 @@ class TestHttpBoundary(unittest.TestCase):
             msg_new="new",
             base_signature="123456",
             new_signature="654321",
-            base_nets=["nn-0000000000a0.nnue"],
-            new_nets=["nn-0000000000a1.nnue"],
+            base_nets=["nn-0000000000a0.o2nn"],
+            new_nets=["nn-0000000000a1.o2nn"],
             tests_repo="https://github.com/Owen-Foundation/Owen",
             auto_purge=False,
             username="TestBoundaryRunUser",
@@ -143,8 +143,8 @@ class TestHttpBoundary(unittest.TestCase):
             msg_new="new",
             base_signature="123456",
             new_signature="654321",
-            base_nets=["nn-0000000000a0.nnue"],
-            new_nets=["nn-0000000000a1.nnue"],
+            base_nets=["nn-0000000000a0.o2nn"],
+            new_nets=["nn-0000000000a1.o2nn"],
             tests_repo="https://github.com/Owen-Foundation/Owen",
             auto_purge=False,
             username=username,
@@ -1199,6 +1199,15 @@ class TestHttpBoundary(unittest.TestCase):
 
         try:
             client = self.TestClient(app)
+            response = client.get("/pending-count")
+            self.assertEqual(response.status_code, 200)
+            # New accounts are approved automatically: not pending.
+            self.assertEqual(response.json()["pending_users_count"], 0)
+            # Manual moderation can still mark an account pending.
+            self.rundb.userdb.users.update_one(
+                {"username": username}, {"$set": {"pending": True}}
+            )
+            self.rundb.userdb.clear_cache()
             response = client.get("/pending-count")
             self.assertEqual(response.status_code, 200)
             self.assertGreaterEqual(response.json()["pending_users_count"], 1)

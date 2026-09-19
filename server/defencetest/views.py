@@ -701,7 +701,7 @@ def logout(request: _ViewContext) -> RedirectResponse:
 def signup(request: _ViewContext) -> dict[str, Any] | RedirectResponse:  # noqa: C901, PLR0911, PLR0912, PLR0915
     _append_no_store_headers(request)
     signup_context = {
-        # Cache-buster so the browser always fetches a fresh /captcha.svg.
+        # Cache-buster so the browser always fetches a fresh /captcha.png.
         "captcha_buster": secrets.token_urlsafe(6),
         "VALID_USERNAME_PATTERN": VALID_USERNAME_PATTERN,
     }
@@ -764,22 +764,22 @@ def signup(request: _ViewContext) -> dict[str, Any] | RedirectResponse:  # noqa:
         request.session.flash("Username or email is already registered", "error")
     else:
         request.session.flash(
-            "Account created! "
-            "To avoid spam, a person will now manually approve your new account. "
-            "This is usually quick but sometimes takes a few hours. "
-            "Thank you for contributing!",
+            "Account created — you can log in right away! "
+            "Your first test runs need one manual approval; after you "
+            "have contributed 500 games through a worker, your runs "
+            "start automatically. Thank you for contributing!",
         )
         return RedirectResponse(url="/login", status_code=302)
     return signup_context
 
 
 def captcha_image(request: _ViewContext) -> Response:
-    """Serve a fresh self-hosted captcha SVG (public, session-bound)."""
+    """Serve a fresh self-hosted captcha PNG (public, session-bound)."""
     _append_no_store_headers(request)
     code = captcha.issue(request.session)
     response = Response(
-        captcha.render_svg(code),
-        media_type="image/svg+xml",
+        captcha.render_png(code),
+        media_type="image/png",
     )
     response.headers["Cache-Control"] = "no-store"
     return response
@@ -3724,7 +3724,7 @@ _VIEW_ROUTES: list[_ViewRoute] = [
     ),
     (
         captcha_image,
-        "/captcha.svg",
+        "/captcha.png",
         {"request_method": ("GET",)},
     ),
     (nns, "/nns", {"renderer": "nns.html.j2"}),

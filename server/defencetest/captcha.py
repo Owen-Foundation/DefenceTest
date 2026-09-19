@@ -1,30 +1,54 @@
-"""Self-hosted SVG captcha for the signup form.
+"""Self-hosted image captcha for the signup form.
 
 Replaces Google reCAPTCHA (which needs per-domain site keys and phones home
-to Google) with a zero-dependency challenge that works on any domain:
+to Google) with a zero-service challenge that works on any domain:
 
-* ``GET /captcha.svg`` renders a fresh 5-character image and stores the
-  answer in the visitor's signed session cookie.
+* ``GET /captcha.png`` renders a fresh 6-character raster image and stores
+  the answer in the visitor's signed session cookie.
 * ``POST /signup`` checks the typed answer against it, single-use, with a
   10-minute expiry.
 
-Spam accounts additionally require manual approval, so a simple
-human-check here is the right strength/cost trade-off.
+The image is a real raster (rotated glyphs, sine-wave warp, interference
+lines, speckle) — the answer exists nowhere in the markup, so bots need
+actual OCR. Spam accounts additionally require manual approval of their
+first runs, so this strength/cost trade-off is appropriate.
 """
 
 from __future__ import annotations
 
 import hmac
+import io
+import math
 import random
 import secrets
 import time
 
-CODE_LENGTH = 5
+from PIL import Image, ImageDraw, ImageFont
+
+CODE_LENGTH = 6
 # Unambiguous: no 0/O, 1/I/L.
 CHARSET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
 SESSION_KEY = "captcha"
 TTL_SECONDS = 600
-WIDTH, HEIGHT = 170, 64
+WIDTH, HEIGHT = 200, 72
+
+_FONT_PATHS = (
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    "C:/Windows/Fonts/arialbd.ttf",
+    "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+    "/Library/Fonts/Arial Bold.ttf",
+)
+
+
+def _font(size: int):
+    for path in _FONT_PATHS:
+        try:
+            return ImageFont.truetype(path, size)
+        except OSError:
+            continue
+    return ImageFont.load_default(size=size)
 
 
 def new_code() -> str:
@@ -52,40 +76,75 @@ def verify(session, answer: object) -> bool:
     return hmac.compare_digest(code.lower(), answer.strip().lower())
 
 
-def render_svg(code: str) -> str:
-    """Render the code as a distorted SVG (cosmetic randomness only)."""
+def render_png(code: str) -> bytes:
+    """Render the code as a distorted raster PNG (cosmetic randomness only)."""
     rng = random.Random()
-    parts = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{HEIGHT}" viewBox="0 0 {WIDTH} {HEIGHT}">',
-        f'<rect width="{WIDTH}" height="{HEIGHT}" fill="#eef0f6"/>',
-    ]
-    # Noise lines behind the text.
-    for _ in range(4):
-        x1, y1 = rng.uniform(0, WIDTH), rng.uniform(0, HEIGHT)
-        x2, y2 = rng.uniform(0, WIDTH), rng.uniform(0, HEIGHT)
-        c = rng.choice(["#b9c2d9", "#9aa7c7", "#c9a0b8", "#93b8a4"])
-        parts.append(
-            f'<path d="M{x1:.0f},{y1:.0f} Q{rng.uniform(0, WIDTH):.0f},{rng.uniform(0, HEIGHT):.0f} '
-            f'{x2:.0f},{y2:.0f}" stroke="{c}" stroke-width="1.6" fill="none"/>'
+    img = Image.new("RGB", (WIDTH, HEIGHT), (238, 240, 246))
+    draw = ImageDraw.Draw(img)
+
+    # Interference arcs behind the text.
+    for _ in range(3):
+        x0, y0 = rng.uniform(-20, WIDTH), rng.uniform(-20, HEIGHT)
+        x1, y1 = x0 + rng.uniform(60, 200), y0 + rng.uniform(30, 90)
+        draw.arc(
+            [x0, y0, x1, y1],
+            start=rng.uniform(0, 360),
+            end=rng.uniform(0, 360) + rng.uniform(90, 270),
+            fill=rng.choice([(150, 160, 190), (170, 150, 170), (150, 175, 160)]),
+            width=2,
         )
-    # Characters with jitter + rotation.
-    step = WIDTH / (len(code) + 1)
+
+    # Glyphs: each on its own layer, rotated, then pasted with jitter.
+    # Tight spacing lets neighbours touch, which breaks segmentation.
+    step = WIDTH / (len(code) + 0.7)
     for i, ch in enumerate(code):
-        x = step * (i + 1) + rng.uniform(-7, 7)
-        y = HEIGHT / 2 + rng.uniform(8, 16)
-        rot = rng.uniform(-24, 24)
-        size = rng.uniform(30, 38)
-        fill = rng.choice(["#1c2340", "#3b2a5e", "#0f3d33", "#5e1f1f"])
-        parts.append(
-            f'<text x="{x:.1f}" y="{y:.1f}" font-family="monospace, monospace" '
-            f'font-size="{size:.0f}" font-weight="bold" fill="{fill}" '
-            f'transform="rotate({rot:.1f} {x:.1f} {y:.1f})">{ch}</text>'
+        size = int(rng.uniform(32, 40))
+        font = _font(size)
+        glyph = Image.new("RGBA", (size + 24, size + 28), (0, 0, 0, 0))
+        gd = ImageDraw.Draw(glyph)
+        gd.text(
+            (12, 10),
+            ch,
+            font=font,
+            fill=rng.choice(
+                [(20, 25, 60), (55, 35, 85), (15, 60, 50), (90, 25, 25)]
+            ),
+        )
+        glyph = glyph.rotate(
+            rng.uniform(-32, 32), resample=Image.BICUBIC, expand=True
+        )
+        x = int(step * (i + 1) - glyph.width / 2 + rng.uniform(-8, 8))
+        y = int(HEIGHT / 2 - glyph.height / 2 + rng.uniform(-8, 8))
+        img.paste(glyph, (x, y), glyph)
+
+    # Sine-wave warp: shift each column vertically.
+    amp = rng.uniform(4, 6)
+    period = rng.uniform(35, 60)
+    phase = rng.uniform(0, 2 * math.pi)
+    warped = Image.new("RGB", (WIDTH, HEIGHT), (238, 240, 246))
+    for x in range(WIDTH):
+        dy = int(amp * math.sin(2 * math.pi * x / period + phase))
+        warped.paste(img.crop((x, 0, x + 1, HEIGHT)), (x, dy))
+
+    draw = ImageDraw.Draw(warped)
+    # Strikethrough lines across the text.
+    for _ in range(2):
+        x0, y0 = rng.uniform(-10, 30), rng.uniform(10, HEIGHT - 10)
+        x1, y1 = rng.uniform(WIDTH - 30, WIDTH + 10), rng.uniform(10, HEIGHT - 10)
+        draw.line(
+            [x0, y0, x1, y1],
+            fill=rng.choice([(110, 120, 145), (130, 115, 135)]),
+            width=2,
         )
     # Speckle dots on top.
-    for _ in range(28):
-        parts.append(
-            f'<circle cx="{rng.uniform(0, WIDTH):.0f}" cy="{rng.uniform(0, HEIGHT):.0f}" '
-            f'r="{rng.uniform(0.8, 1.8):.1f}" fill="#8a93ad"/>'
+    for _ in range(120):
+        r = rng.uniform(0.7, 1.7)
+        x, y = rng.uniform(0, WIDTH), rng.uniform(0, HEIGHT)
+        draw.ellipse(
+            [x - r, y - r, x + r, y + r],
+            fill=rng.choice([(120, 130, 155), (90, 95, 120), (150, 140, 160)]),
         )
-    parts.append("</svg>")
-    return "".join(parts)
+
+    buf = io.BytesIO()
+    warped.save(buf, format="PNG")
+    return buf.getvalue()

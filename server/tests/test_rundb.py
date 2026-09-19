@@ -112,8 +112,8 @@ class CreateRunDBTest(unittest.TestCase):
             msg_new="Super stuff",
             base_signature="123456",
             new_signature="654321",
-            base_nets=["nn-0000000000a0.nnue"],
-            new_nets=["nn-0000000000a0.nnue", "nn-0000000000a1.nnue"],
+            base_nets=["nn-0000000000a0.o2nn"],
+            new_nets=["nn-0000000000a0.o2nn", "nn-0000000000a1.o2nn"],
             rescheduled_from="653db116cc309ae839563103",
             tests_repo=tests_repo,
             master_repo=master_repo,
@@ -240,8 +240,8 @@ class CreateRunDBTest(unittest.TestCase):
             msg_new="Super stuff",
             base_signature="123456",
             new_signature="654321",
-            base_nets=["nn-0000000000a0.nnue"],
-            new_nets=["nn-0000000000a0.nnue", "nn-0000000000a1.nnue"],
+            base_nets=["nn-0000000000a0.o2nn"],
+            new_nets=["nn-0000000000a0.o2nn", "nn-0000000000a1.o2nn"],
             rescheduled_from="653db116cc309ae839563103",
             tests_repo="https://github.com/15408be06cfa0ff6/Owen",
             auto_purge=False,
@@ -803,6 +803,128 @@ class CreateRunDBTest(unittest.TestCase):
             self.assertTrue(isinstance(b, bytes))
             c = _unpack_flips(b, length=L)
             self.assertEqual(a, c)
+
+
+class AutoApproveTest(unittest.TestCase):
+    """Automatic account + run approval (works with no approver around)."""
+
+    APPROVER = "AutoApproveApprover"
+    NEWCOMER = "AutoApproveNewcomer"
+    VETERAN = "AutoApproveVeteran"
+    USERS = (APPROVER, NEWCOMER, VETERAN)
+
+    @classmethod
+    def setUpClass(cls):
+        cls.rundb = test_support.get_rundb()
+
+    def setUp(self):
+        self._run_ids = []
+        for username in self.USERS:
+            self.rundb.userdb.users.delete_many({"username": username})
+            self.rundb.userdb.user_cache.delete_many({"username": username})
+        self.rundb.userdb.clear_cache()
+        for username in self.USERS:
+            self.rundb.userdb.create_user(
+                username, "Au70!Test9", f"{username}@example.com", ""
+            )
+        self.rundb.userdb.add_user_group(self.APPROVER, "group:approvers")
+        self.rundb.userdb.record_games(self.VETERAN, 600)
+
+    def tearDown(self):
+        for run_id in self._run_ids:
+            self.rundb.runs.delete_one({"_id": ObjectId(run_id)})
+            self.rundb.unfinished_runs.discard(run_id)
+        for username in self.USERS:
+            self.rundb.userdb.users.delete_many({"username": username})
+            self.rundb.userdb.user_cache.delete_many({"username": username})
+        self.rundb.userdb.clear_cache()
+
+    def _new_run(self, username):
+        run_id = self.rundb.new_run(
+            base_tag="master",
+            new_tag="master",
+            num_games=400,
+            tc="10+0.01",
+            new_tc="10+0.01",
+            book="book.pgn",
+            book_depth="10",
+            threads=1,
+            base_options="",
+            new_options="",
+            info=f"auto-approve test {username}",
+            resolved_base="347d613b0e2c47f90cbf1c5a5affe97303f1ac3d",
+            resolved_new="347d613b0e2c47f90cbf1c5a5affe97303f1ac3d",
+            msg_base="Base",
+            msg_new="New",
+            base_signature="123456",
+            new_signature="654321",
+            base_nets=["nn-0000000000a0.o2nn"],
+            new_nets=["nn-0000000000a0.o2nn"],
+            tests_repo="https://github.com/Owen-Foundation/Owen",
+            auto_purge=False,
+            username=username,
+            start_time=datetime.now(UTC),
+        )
+        self._run_ids.append(run_id)
+        return self.rundb.get_run(run_id)
+
+    def test_create_user_auto_approved_with_zero_games(self):
+        user = self.rundb.userdb.get_user(self.NEWCOMER)
+        self.assertFalse(user["pending"])
+        self.assertEqual(user.get("games_played", 0), 0)
+
+    def test_record_games_accumulates_and_ignores_junk(self):
+        self.rundb.userdb.record_games(self.NEWCOMER, 200)
+        self.assertEqual(self.rundb.userdb.get_user(self.NEWCOMER)["games_played"], 200)
+        self.rundb.userdb.record_games(self.NEWCOMER, 50)
+        self.assertEqual(self.rundb.userdb.get_user(self.NEWCOMER)["games_played"], 250)
+        for bad in ("", None, 0, -5):
+            self.rundb.userdb.record_games(self.NEWCOMER, bad)
+        self.assertEqual(self.rundb.userdb.get_user(self.NEWCOMER)["games_played"], 250)
+        # Unknown users are a harmless no-op.
+        self.rundb.userdb.record_games("AutoApproveNobody", 10)
+
+    def test_should_auto_approve_matrix(self):
+        check = self.rundb._should_auto_approve
+        self.assertTrue(check(self.APPROVER))
+        self.assertFalse(check(self.NEWCOMER))
+        self.assertTrue(check(self.VETERAN))
+        self.assertFalse(check("AutoApproveNobody"))
+        self.assertFalse(check(""))
+
+    def test_new_run_approval_policy(self):
+        veteran_run = self._new_run(self.VETERAN)
+        self.assertTrue(veteran_run["approved"])
+        self.assertEqual(veteran_run["approver"], "auto")
+        approver_run = self._new_run(self.APPROVER)
+        self.assertTrue(approver_run["approved"])
+        newcomer_run = self._new_run(self.NEWCOMER)
+        self.assertFalse(newcomer_run["approved"])
+
+    def test_update_task_credits_contributor(self):
+        run = self._new_run(self.NEWCOMER)
+        run_id = str(run["_id"])
+        task = {
+            "num_games": 200,
+            "stats": {"wins": 0, "losses": 0, "draws": 0, "crashes": 0},
+            "pending": True,
+            "active": True,
+            "worker_info": {"username": self.NEWCOMER},
+        }
+        run["tasks"].append(task)
+        self.rundb.buffer(run, priority=Prio.SAVE_NOW)
+        worker_info = {"username": self.NEWCOMER}
+        ret = self.rundb.update_task(
+            worker_info,
+            run_id,
+            0,
+            {"wins": 30, "losses": 30, "draws": 40, "crashes": 0},
+            {},
+        )
+        self.assertEqual(ret, {"task_alive": True})
+        self.assertEqual(
+            self.rundb.userdb.get_user(self.NEWCOMER)["games_played"], 100
+        )
 
 
 if __name__ == "__main__":

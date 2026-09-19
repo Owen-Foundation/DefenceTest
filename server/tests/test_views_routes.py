@@ -8,6 +8,7 @@ import test_support
 _GET_ONLY_ROUTES = {
     "/",
     "/actions",
+    "/captcha.png",
     "/contributors",
     "/contributors/monthly",
     "/nns",

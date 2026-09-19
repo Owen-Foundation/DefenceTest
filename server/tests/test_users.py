@@ -115,9 +115,9 @@ class TestUsers(UiUserTestCase):
         csrf = test_support.extract_csrf_token(response.text)
         with patch(
             "defencetest.captcha.new_code",
-            return_value="ABCDE",
+            return_value="ABCDEF",
         ):
-            svg = self.client.get("/captcha.svg")
+            svg = self.client.get("/captcha.png")
             self.assertEqual(svg.status_code, 200)
             response = self.client.post(
                 "/signup",
@@ -127,7 +127,7 @@ class TestUsers(UiUserTestCase):
                     "password2": self.signup_password,
                     "email": "signup-test@user.net",
                     "tests_repo": self.tests_repo,
-                    "captcha": "abcde",
+                    "captcha": "abcdef",
                     "csrf_token": csrf,
                 },
                 follow_redirects=False,
@@ -152,9 +152,9 @@ class TestUsers(UiUserTestCase):
 
         with patch(
             "defencetest.captcha.new_code",
-            return_value="FGHIJ",
+            return_value="FGHIJ2",
         ):
-            svg = self.client.get("/captcha.svg")
+            svg = self.client.get("/captcha.png")
             self.assertEqual(svg.status_code, 200)
             response = self.client.post(
                 "/signup",
@@ -164,7 +164,7 @@ class TestUsers(UiUserTestCase):
                     "password2": self.signup_password,
                     "email": "canonical-signup-test@user.net",
                     "tests_repo": self.tests_repo + "/",
-                    "captcha": "fghij",
+                    "captcha": "fghij2",
                     "csrf_token": csrf,
                 },
                 follow_redirects=False,
