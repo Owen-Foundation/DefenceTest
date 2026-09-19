@@ -1187,29 +1187,12 @@ def get_exception(files):
 
 
 def get_worker_arch(worker_dir):
-    working_dir = os.getcwd()
-    os.chdir(worker_dir)
-    try:
-        blob = download_from_github(
-            item="scripts/get_native_properties.sh",
-            owner="Owen-Foundation",
-            repo="Owen",
-            branch="master",
-        )
-        with open("get_native_properties.sh", "w") as f:
-            f.write(blob.decode())
-        arch = (
-            subprocess.check_output(["sh", "./get_native_properties.sh"])
-            .decode()
-            .split()[0]
-        )
-        print(f"Worker arch determined to be: {arch}")
-    except Exception as e:
-        print(f"Exception obtaining worker arch:\n{e}", file=sys.stderr)
-        print('Unable to determine worker arch. Setting it to "unknown"')
-        arch = "unknown"
-    finally:
-        os.chdir(working_dir)
+    # The server does not consume this field; report the local CPU
+    # architecture directly instead of downloading a detection script
+    # (which 404s and slows down every worker start).
+    del worker_dir  # unused, kept for the call signature
+    arch = platform.machine()
+    print(f"Worker arch determined to be: {arch}")
     return arch
 
 
