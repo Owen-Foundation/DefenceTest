@@ -1144,6 +1144,7 @@ def verify_toolchain():
     cmds = {
         "strip": ["strip", "-V"],
         "make": ["make", "-v"],
+        "cmake": ["cmake", "--version"],
     }
     if IS_MACOS:
         # MacOSX appears not to have a method to detect strip
