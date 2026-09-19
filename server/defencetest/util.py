@@ -649,6 +649,7 @@ supported_compilers = ["clang++", "g++"]
 
 supported_arches = [
     "apple-silicon",
+    "arm64",
     "armv7",
     "armv7-neon",
     "armv8",
@@ -675,6 +676,7 @@ supported_arches = [
     "x86-64-sse3-popcnt",
     "x86-64-sse41-popcnt",
     "x86-64-ssse3",
+    "x86_64",
     "x86-64-vnni512",
     "x86-64-avx512icl",
 ]

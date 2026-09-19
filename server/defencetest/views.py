@@ -181,6 +181,10 @@ FORM_MAX_FILES = UI_FORM_MAX_FILES
 FORM_MAX_FIELDS = UI_FORM_MAX_FIELDS
 FORM_MAX_PART_SIZE = UI_FORM_MAX_PART_SIZE_BYTES
 
+# Directory holding "<net>.gz" files written by the NN upload page.
+# Served raw (decompressed) by GET /nn/{name} for workers.
+NN_DIR = Path(os.environ.get("DEFENCETEST_NN_DIR", "/var/www/defencetest/nn"))
+
 router = APIRouter(tags=["ui"])
 logger = logging.getLogger(__name__)
 
@@ -773,6 +777,23 @@ def signup(request: _ViewContext) -> dict[str, Any] | RedirectResponse:  # noqa:
     return signup_context
 
 
+def serve_nn(request: _ViewContext) -> Response:
+    """Serve a network's raw bytes to workers (decompressed from <net>.gz)."""
+    name = request.matchdict.get("name", "")
+    if not re.fullmatch(r"nn-[0-9a-f]{12}\.o2nn", name or ""):
+        return Response("Invalid network name", status_code=404)
+    path = NN_DIR / f"{name}.gz"
+    try:
+        data = gzip.decompress(path.read_bytes())
+    except (OSError, EOFError):
+        return Response("Network not found", status_code=404)
+    return Response(
+        data,
+        media_type="application/octet-stream",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
 def captcha_image(request: _ViewContext) -> Response:
     """Serve a fresh self-hosted captcha PNG (public, session-bound)."""
     _append_no_store_headers(request)
@@ -1211,7 +1232,7 @@ def upload(request: _ViewContext) -> dict[str, Any] | RedirectResponse:  # noqa:
         for error in errors:
             request.session.flash(error, "error")
         return base_context
-    net_file_gz = Path("/var/www/defencetest/nn") / f"{filename}.gz"
+    net_file_gz = NN_DIR / f"{filename}.gz"
     try:
         with gzip.open(net_file_gz, "xb") as f:
             f.write(network)
@@ -3725,6 +3746,11 @@ _VIEW_ROUTES: list[_ViewRoute] = [
     (
         captcha_image,
         "/captcha.png",
+        {"request_method": ("GET",)},
+    ),
+    (
+        serve_nn,
+        "/nn/{name}",
         {"request_method": ("GET",)},
     ),
     (nns, "/nns", {"renderer": "nns.html.j2"}),

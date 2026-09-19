@@ -12,6 +12,7 @@ _GET_ONLY_ROUTES = {
     "/contributors",
     "/contributors/monthly",
     "/nns",
+    "/nn/{name}",
     "/rate_limits",
     "/rate_limits/server",
     "/sprt_calc",
