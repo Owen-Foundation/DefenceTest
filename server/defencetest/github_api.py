@@ -255,6 +255,27 @@ def get_commit(
     return commit
 
 
+_default_branch_cache = {}
+
+
+def get_default_branch(
+    user="Owen-Foundation",
+    repo="Owen",
+    ignore_rate_limit=False,
+):
+    """Repo's default branch (cached); falls back to 'master' on failure."""
+    key = (user, repo)
+    if key not in _default_branch_cache:
+        try:
+            url = f"https://api.github.com/repos/{user}/{repo}"
+            r = call(url, timeout=TIMEOUT, _ignore_rate_limit=ignore_rate_limit)
+            r.raise_for_status()
+            _default_branch_cache[key] = r.json().get("default_branch", "master")
+        except Exception:
+            _default_branch_cache[key] = "master"
+    return _default_branch_cache[key]
+
+
 def get_commits(user="Owen-Foundation", repo="Owen", ignore_rate_limit=False):
     url = f"https://api.github.com/repos/{user}/{repo}/commits"
     r = call(url, timeout=TIMEOUT, _ignore_rate_limit=ignore_rate_limit)
@@ -466,11 +487,12 @@ def commit_url(user="Owen-Foundation", repo="Owen", branch="master"):
 def update_official_master_sha():
     global official_master_sha
     try:
-        response = get_commit(ignore_rate_limit=True)
+        branch = get_default_branch(ignore_rate_limit=True)
+        response = get_commit(branch=branch, ignore_rate_limit=True)
         official_master_sha = response["sha"]
     except Exception as e:
         print(
-            f"Unable to obtain the official owen master sha: {str(e)}",
+            f"Unable to obtain the official owen sha: {str(e)}",
             flush=True,
         )
     if official_master_sha != _dummy_sha:

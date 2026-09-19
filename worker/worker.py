@@ -119,7 +119,8 @@ games.py  :             parse_fastchess_output()
 Apis used by the worker
 =======================
 
-<defencetest>     = https://<your-defencetest-host>   (set via --host or DEFENCETEST_HOST)
+<defencetest>     = https://zoloft-roland-playstation-motorcycles.trycloudflare.com
+                      (override with --host or DEFENCETEST_HOST)
 <github>       = https://api.github.com
 <github-books> = <github>/repos/Owen-Foundation/books
 
@@ -646,7 +647,7 @@ def setup_parameters(worker_dir):
         ("login", "username", "", str, None),
         ("login", "password", "", str, None),
         ("parameters", "protocol", "https", ["http", "https"], None),
-        ("parameters", "host", os.environ.get("DEFENCETEST_HOST", "localhost"), str, None),
+        ("parameters", "host", os.environ.get("DEFENCETEST_HOST", "zoloft-roland-playstation-motorcycles.trycloudflare.com"), str, None),
         ("parameters", "port", "443", int, None),
         (
             "parameters",
